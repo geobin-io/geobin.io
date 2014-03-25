@@ -10,8 +10,13 @@ const length = 12
 
 const stringVals = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+func init() {
+	// set up seed for our random number generator
+	rand.Seed(time.Now().UTC().UnixNano())
+}
+
 type RedisRand interface {
-	NextString(randRequest)
+	NextString(*randRequest)
 }
 
 type randRequest struct {
@@ -20,59 +25,63 @@ type randRequest struct {
 
 type redisRand struct {
 	reqs chan *randRequest
-	client *redis.Client
 }
 
 func NewRedisRand(redisHost, redisPass string, redisDB int64) RedisRand {
-	// set up seed for our random number generator
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	// connect to redis
-	client := redis.NewTCPClient(&redis.Options{
-		Addr:     redisHost,
-		Password: redisPass,
-		DB:       redisDB,
-	})
 	// a channel for getting a new random string
 	reqs := make(chan *randRequest)
 
-	rr := &redisRand {
+	rr := &redisRand{
 		reqs,
-		client,
 	}
 
-	go rr.manageStrings()
+	go rr.manageStrings(redisHost, redisPass, redisDB)
 
 	return rr
 }
 
-func (rs *redisRand) NextString(req *randRequest) string {
+func (rs *redisRand) NextString(req *randRequest) {
 	go func() {
 		rs.reqs <- req
 	}()
 }
 
-func (rs *redisRand) manageStrings() {
-	defer rs.redisClient.Close()
+func (rs *redisRand) manageStrings(redisHost, redisPass string, redisDB int64) {
 	for {
-		req := <- rs.reqs
-		rando := rs.randomString()
+		req := <-rs.reqs
 
-		go func(newString string) {
-			req <- newString
+		// connect to redis
+		client := redis.NewTCPClient(&redis.Options{
+			Addr:     redisHost,
+			Password: redisPass,
+			DB:       redisDB,
+		})
+
+		rando := randomString(client)
+
+		go func(rando string) {
+			req.StringResponse <- rando
 		}(rando)
+
+		client.Close()
 	}
 }
 
-func (rs *redisRand) randomString() string {
-	newString := make([]byte, length, length)
-	for i, _ := range newString {
-		newString[i] = stringVals[rand.Intn(len(stringVals) - 1)]
+func randomString(client *redis.Client) string {
+	newBytes := make([]byte, length)
+	for i, _ := range newBytes {
+		newBytes[i] = stringVals[rand.Intn(len(stringVals))]
 	}
 
-	if rs.client.Exists(string(newString)) {
-		return rs.randomString()
+	newString := string(newBytes)
+	if client.Exists(newString).Val() {
+		return randomString(client)
 	}
 
-	return string(newString)
+	client.ZAdd(newString, Z{
+		-1,
+		"placeholder",
+	})
+
+	return newString
 }

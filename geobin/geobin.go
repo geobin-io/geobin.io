@@ -10,3 +10,7 @@ func init() {
 
 	http.Handle("/", r)
 }
+
+func main() {
+
+}
