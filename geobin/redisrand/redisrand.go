@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-const length = 12
-
 const stringVals = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func init() {
@@ -16,15 +14,18 @@ func init() {
 }
 
 type RedisRand interface {
-	NextString(*randRequest)
+	NextString(handler RedisRandHandler, length int)
 }
 
-type randRequest struct {
-	StringResponse chan string
-}
+type RedisRandHandler func(randomString string)
 
 type redisRand struct {
 	reqs chan *randRequest
+}
+
+type randRequest struct {
+	handler RedisRandHandler
+	length int
 }
 
 func NewRedisRand(redisHost, redisPass string, redisDB int64) RedisRand {
@@ -35,18 +36,18 @@ func NewRedisRand(redisHost, redisPass string, redisDB int64) RedisRand {
 		reqs,
 	}
 
-	go rr.manageStrings(redisHost, redisPass, redisDB)
+	go rr.handleRands(redisHost, redisPass, redisDB)
 
 	return rr
 }
 
-func (rs *redisRand) NextString(req *randRequest) {
+func (rs *redisRand) NextString(handler RedisRandHandler, length int) {
 	go func() {
-		rs.reqs <- req
+		rs.reqs <- &randRequest{handler, length}
 	}()
 }
 
-func (rs *redisRand) manageStrings(redisHost, redisPass string, redisDB int64) {
+func (rs *redisRand) handleRands(redisHost, redisPass string, redisDB int64) {
 	for {
 		req := <-rs.reqs
 
@@ -57,17 +58,13 @@ func (rs *redisRand) manageStrings(redisHost, redisPass string, redisDB int64) {
 			DB:       redisDB,
 		})
 
-		rando := randomString(client)
-
-		go func(rando string) {
-			req.StringResponse <- rando
-		}(rando)
+		req.handler(randomString(client, req.length))
 
 		client.Close()
 	}
 }
 
-func randomString(client *redis.Client) string {
+func randomString(client *redis.Client, length int) string {
 	newBytes := make([]byte, length)
 	for i, _ := range newBytes {
 		newBytes[i] = stringVals[rand.Intn(len(stringVals))]
@@ -75,13 +72,8 @@ func randomString(client *redis.Client) string {
 
 	newString := string(newBytes)
 	if client.Exists(newString).Val() {
-		return randomString(client)
+		return randomString(client, length)
 	}
-
-	client.ZAdd(newString, Z{
-		-1,
-		"placeholder",
-	})
 
 	return newString
 }
