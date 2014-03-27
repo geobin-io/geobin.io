@@ -1,6 +1,6 @@
 // (function(){
 
-var map, features, binStore, primus, channel;
+var map, features, binStore, primus, channel, ws;
 
 var thisUrl = window.location.toString();
 var binId = window.location.pathname.substring(1);
@@ -15,9 +15,9 @@ init();
 
 function init () {
   initMap();
-  initStore();
+  // initStore();
   bindUI();
-  initPrimus();
+  initSocket();
 }
 
 // initializer functions
@@ -112,19 +112,23 @@ function bindUI () {
   });
 }
 
-function initPrimus () {
-  primus = new Primus('/');
-  channel = primus.channel(binId);
+function initSocket () {
+  var loc = window.location.origin.replace(/https?/,'ws');
+  ws = new WebSocket(loc + '/' + binId);
+  // channel = primus.channel(binId);
 
-  primus.on('open', function () {
-    $('.status').text('is listening at ' + thisUrl).fadeIn();
+  // primus.on('open', function () {
+  //   $('.status').text('is listening at ' + thisUrl).fadeIn();
 
-    if (!Object.keys(binStore).length) {
-      notify.success();
-    }
-  });
+  //   if (!Object.keys(binStore).length) {
+  //     notify.success();
+  //   }
+  // });
 
-  channel.on('data', processData);
+  // channel.on('data', processData);
+  ws.onmessage = function () {
+    console.log(arguments);
+  };
 }
 
 // helper functions
