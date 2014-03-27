@@ -15,7 +15,7 @@ import (
 
 const (
 	redisHost = "127.0.0.1:6379"
-	nameVals  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	nameVals  = "023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ"
 	nameLen   = 10
 )
 
@@ -44,33 +44,17 @@ func init() {
 }
 
 func main() {
+	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
+	go redisPump()
+
+	defer func() {
+		pubsub.Close()
+		client.Close()
+	}()
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
-
-	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
-	for {
-		v, err := pubsub.Receive()
-		if err != nil {
-			log.Println("Error from Redis PubSub:", err)
-			return
-		}
-
-		switch v := v.(type) {
-		case redis.Message:
-			wsChan, ok := sockets[v.Channel]
-			if !ok {
-				log.Println("Got message for unknown channel:", v.Channel)
-				return
-			}
-
-			wsChan <- []byte(v.Payload)
-		}
-	}
-
-	pubsub.Close()
-	client.Close()
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
@@ -155,6 +139,26 @@ func existing(w http.ResponseWriter, r *http.Request) {
 
 		t, _ := template.ParseFiles("templates/dashboard.html")
 		t.Execute(w, d)
+	}
+}
+
+func redisPump() {
+	for {
+		v, err := pubsub.Receive()
+		if err != nil {
+			log.Println("Error from Redis PubSub:", err)
+			return
+		}
+
+		switch v := v.(type) {
+		case redis.Message:
+			wsChan, ok := sockets[v.Channel]
+			if !ok {
+				log.Println("Got message for unknown channel:", v.Channel)
+				return
+			}
+			wsChan <- []byte(v.Payload)
+		}
 	}
 }
 
