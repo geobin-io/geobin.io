@@ -126,6 +126,13 @@ function initSocket () {
   // });
 
   // channel.on('data', processData);
+  ws.onopen = function () {
+    $('.status').text('is listening at ' + thisUrl).fadeIn();
+
+    // if (!Object.keys(binStore).length) {
+    notify.success();
+    // }
+  };
   ws.onmessage = function () {
     console.log(arguments);
   };
