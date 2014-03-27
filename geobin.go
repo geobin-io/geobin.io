@@ -40,6 +40,7 @@ func init() {
 	r.HandleFunc("/create", create)
 	r.HandleFunc("/{name}", existing)
 	r.HandleFunc("/ws/{name}", openSocket)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	http.Handle("/", r)
 }
 
