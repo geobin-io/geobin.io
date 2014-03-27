@@ -114,7 +114,7 @@ function bindUI () {
 
 function initSocket () {
   var loc = window.location.origin.replace(/https?/,'ws');
-  ws = new WebSocket(loc + '/' + binId);
+  ws = new WebSocket(loc + '/ws/' + binId);
   // channel = primus.channel(binId);
 
   // primus.on('open', function () {
