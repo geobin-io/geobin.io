@@ -17,7 +17,9 @@ const (
 	redisHost = "127.0.0.1:6379"
 )
 
-var client = redis.NewTCPClient(&redis.Options{Addr: redisHost,})
+var client = redis.NewTCPClient(&redis.Options{Addr: redisHost})
+var pubsub = client.PubSub()
+var sockets = make(map[string]chan []byte)
 
 type DashBoard struct {
 	UUID    string
@@ -30,8 +32,38 @@ func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", create)
 	r.HandleFunc("/{uuid}", existing)
-	//	r.HandleFunc("/socket/{uuid}", openSocket)
+	r.HandleFunc("/socket/{uuid}", openSocket)
 	http.Handle("/", r)
+}
+
+func main() {
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+
+	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
+	for {
+		v, err := pubsub.Receive()
+		if err != nil {
+			log.Println("Error from Redis PubSub:", err)
+			return
+		}
+
+		switch v := v.(type) {
+		case redis.Message:
+			wsChan, ok := sockets[v.Channel]
+			if !ok {
+				log.Println("Got message for unknown channel:", v.Channel)
+				return
+			}
+
+			wsChan <- []byte(v.Payload)
+		}
+	}
+
+	pubsub.Close()
+	client.Close()
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +79,13 @@ func create(w http.ResponseWriter, r *http.Request) {
 }
 
 func existing(w http.ResponseWriter, r *http.Request) {
-	socket := mux.Vars(r)["uuid"]
+	uuid := mux.Vars(r)["uuid"]
+
+	if !client.Exists(uuid).Val() {
+		http.Error(w, "Unkown UUID, hit index (/) to create one.", http.StatusBadRequest)
+		return
+	}
+
 	if r.Method == "POST" {
 		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
@@ -64,42 +102,18 @@ func existing(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		client.ZAdd(socket, redis.Z{float64(time.Now().UTC().Unix()), string(body)})
-		client.Publish(socket, string(body))
-		client.Expire(socket, 48*time.Second)
+		client.ZAdd(uuid, redis.Z{float64(time.Now().UTC().Unix()), string(body)})
+		client.Publish(uuid, string(body))
+		client.Expire(uuid, 48*time.Second)
 	} else if r.Method == "GET" {
-		history := client.ZRevRange(socket, "0", "-1").Val()
-		client.Expire(socket, 48*time.Second)
+		history := client.ZRevRange(uuid, "0", "-1").Val()
+		client.Expire(uuid, 48*time.Second)
 		d := &DashBoard{
-			socket,
+			uuid,
 			history,
 		}
 
-		t, _ := template.ParseFiles("html/dashboard.html")
+		t, _ := template.ParseFiles("templates/dashboard.html")
 		t.Execute(w, d)
-	}
-}
-
-//func openSocket(w http.ResponseWriter, r *http.Request) {
-//	// upgrade the connection
-//	conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
-//	if _, ok := err.(websocket.HandshakeError); ok {
-//		http.Error(w, "Not a websocket handshake", http.StatusBadRequest)
-//		return
-//	} else if err != nil {
-//		log.Println("Error upgrading connection to websocket protocol:", err)
-//		http.Error(w, "Error while opening websocket!", http.StatusInternalServerError)
-//		return
-//	}
-//
-//	pubsub := client.PubSub()
-//	pubsub.Subscribe(socket)
-//	pubsub.Receive()
-//}
-
-func main() {
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
 	}
 }
