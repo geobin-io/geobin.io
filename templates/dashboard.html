@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  {{$u := .Name}}
   <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
     <div class="navbar-header">
       <div class="navbar-brand title"><i class="fa fa-globe"></i> <a href="/">GeoBin</a> <small class="status">is trying to connect</small></div>
@@ -27,25 +26,7 @@
         </div>
       </div>
       <div class="col-md-5">
-        <div class="callback-content">
-          {{range .History}}
-          <div>
-            <p>
-            {{.Timestamp}}
-            </p>
-            {{range $k, $v := .Headers}}
-            <p>
-                {{$k}}: {{$v}}
-            </p>
-            {{end}}
-            <p>
-            {{.Body}}
-            </p>
-          </div>
-          {{else}}
-          <p id="empty">No History Yet.</p>
-          {{end}}
-        </div>
+        <div class="callback-content"></div>
       </div>
       <div class="col-md-5">
         <div id="map"></div>

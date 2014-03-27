@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	redis "github.com/vmihailenco/redis/v2"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -24,11 +24,6 @@ var client = redis.NewTCPClient(&redis.Options{Addr: redisHost})
 var pubsub = client.PubSub()
 var sockets = make(map[string]chan []byte)
 
-type DashBoard struct {
-	Name    string
-	History []GeobinRequest
-}
-
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
@@ -45,6 +40,7 @@ func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/create", create)
 	r.HandleFunc("/{name}", existing)
+	r.HandleFunc("/history/{name}", history)
 	r.HandleFunc("/ws/{name}", openSocket)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	http.Handle("/", r)
@@ -134,32 +130,53 @@ func existing(w http.ResponseWriter, r *http.Request) {
 			log.Println("Failure to PUBLISH to", name, res.Err())
 		}
 	} else if r.Method == "GET" {
-		set := client.ZRevRange(name, "0", "-1")
-		if set.Err() != nil {
-			log.Println("Failure to ZREVRANGE for", name, set.Err())
+		f, err := ioutil.ReadFile("templates/dashboard.html")
+		if err != nil {
+			log.Println("Error while reading dashboard.html", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
-
-		// chop off the last history member since it is the placeholder value from when the set was created
-		vals := set.Val()[:len(set.Val())-1]
-
-		history := make([]GeobinRequest, 0, len(vals))
-		for _, v := range vals {
-			var gr GeobinRequest
-			if err := json.Unmarshal([]byte(v), &gr); err != nil {
-				log.Println("Error unmarshalling request history:", err)
-			}
-			history = append(history, gr)
-		}
-
-		// dashboard context object,
-		d := &DashBoard{
-			name,
-			history,
-		}
-
-		t, _ := template.ParseFiles("templates/dashboard.html")
-		t.Execute(w, d)
+		fmt.Fprint(w, string(f))
 	}
+}
+
+func history(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	exists, err := nameExists(name)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !exists {
+		http.NotFound(w, r)
+		return
+	}
+
+	set := client.ZRevRange(name, "0", "-1")
+	if set.Err() != nil {
+		log.Println("Failure to ZREVRANGE for", name, set.Err())
+	}
+
+	// chop off the last history member since it is the placeholder value from when the set was created
+	vals := set.Val()[:len(set.Val())-1]
+
+	history := make([]GeobinRequest, 0, len(vals))
+	for _, v := range vals {
+		var gr GeobinRequest
+		if err := json.Unmarshal([]byte(v), &gr); err != nil {
+			log.Println("Error unmarshalling request history:", err)
+		}
+		history = append(history, gr)
+	}
+
+	resp, err := json.Marshal(history)
+	if err != nil {
+		log.Println("Error marshalling request history:", err)
+		http.Error(w, "Could not generate history.", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(resp))
 }
 
 func redisPump() {
