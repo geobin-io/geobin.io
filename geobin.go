@@ -1,7 +1,8 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	redis "github.com/vmihailenco/redis/v2"
 	"html/template"
@@ -9,8 +10,8 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 )
 
 const (
@@ -26,7 +27,13 @@ var sockets = make(map[string]chan []byte)
 
 type DashBoard struct {
 	Name    string
-	History [][]string
+	History []GeobinRequest
+}
+
+type GeobinRequest struct {
+	Timestamp int64             `json:"timestamp"`
+	Headers   map[string]string `json:"headers"`
+	Body      string            `json:"body"`
 }
 
 func init() {
@@ -104,18 +111,27 @@ func existing(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// put headers into the set member to make the value unique
-		var buffer bytes.Buffer
+		headers := make(map[string]string)
 		for k, v := range r.Header {
-			buffer.WriteString(k + ": " + strings.Join(v, ", ") + "\r\n")
+			headers[k] = strings.Join(v, ", ")
 		}
-		buffer.WriteString(string(body))
 
-		if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), buffer.String()}); res.Err() != nil {
+		gr := GeobinRequest{
+			Timestamp: time.Now().UTC().Unix(),
+			Headers:   headers,
+			Body:      string(body),
+		}
+
+		encoded, err := json.Marshal(gr)
+		if err != nil {
+			log.Println("Error marshalling request:", err)
+		}
+
+		if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), string(encoded)}); res.Err() != nil {
 			log.Println("Failure to ZADD to", name, res.Err())
 		}
 
-		if res := client.Publish(name, buffer.String()); res.Err() != nil {
+		if res := client.Publish(name, string(encoded)); res.Err() != nil {
 			log.Println("Failure to PUBLISH to", name, res.Err())
 		}
 	} else if r.Method == "GET" {
@@ -125,11 +141,15 @@ func existing(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// chop off the last history member since it is the placeholder value from when the set was created
-		vals := set.Val()[:len(set.Val()) - 1]
+		vals := set.Val()[:len(set.Val())-1]
 
-		history := make([][]string, len(vals))
-		for i, v := range vals {
-			history[i] = strings.Split(v, "\r\n")
+		history := make([]GeobinRequest, 0, len(vals))
+		for _, v := range vals {
+			var gr GeobinRequest
+			if err := json.Unmarshal([]byte(v), &gr); err != nil {
+				log.Println("Error unmarshalling request history:", err)
+			}
+			history = append(history, gr)
 		}
 
 		// dashboard context object,
