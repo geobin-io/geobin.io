@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	redis "github.com/vmihailenco/redis/v2"
 	"html/template"
@@ -172,7 +171,7 @@ func redisPump() {
 		}
 
 		switch v := v.(type) {
-		case redis.Message:
+		case *redis.Message:
 			wsChan, ok := sockets[v.Channel]
 			if !ok {
 				log.Println("Got message for unknown channel:", v.Channel)
