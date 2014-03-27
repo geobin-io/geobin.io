@@ -1,4 +1,4 @@
-{{$u := .UUID}}
+{{$u := .Name}}
 <script type="text/javascript">
 function domReady () {
   if ('WebSocket' in window) {
@@ -29,7 +29,11 @@ if ( document.addEventListener ) {
 <div id="history">
     {{range .History}}
     <div>
-        {{.}}
+        {{range .}}
+        <p>
+            {{.}}
+        </p>
+        {{end}}
     </div>
     {{else}}
     <p id="empty">No History Yet.</p>

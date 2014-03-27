@@ -16,8 +16,9 @@ const (
 	pingPeriod = 60 * time.Second
 )
 
-// connection is an middleman between the websocket connection and redis.
+// connection is a middleman between the websocket connection and redis.
 type connection struct {
+	name string
 	// The websocket connection.
 	ws *websocket.Conn
 
@@ -30,6 +31,10 @@ func (c *connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		if err := pubsub.Unsubscribe(c.name); err != nil {
+			log.Println("Failure to UNSUBSCRIBE from", c.name, err)
+		}
+		delete(sockets, c.name)
 		c.ws.Close()
 	}()
 	for {
@@ -58,12 +63,7 @@ func (c *connection) write(mt int, payload []byte) error {
 
 func openSocket(w http.ResponseWriter, r *http.Request) {
 	// upgrade the connection
-	uuid := mux.Vars(r)["uuid"]
-
-	if !client.Exists(uuid).Val() {
-		http.Error(w, "Unknown UUID.", http.StatusBadRequest)
-		return
-	}
+	name := mux.Vars(r)["name"]
 
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
@@ -76,16 +76,19 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// start pub subbing
-	pubsub.Subscribe(uuid)
-	defer pubsub.Unsubscribe(uuid)
+	if err = pubsub.Subscribe(name); err != nil {
+		log.Println("Failure to SUBSCRIBE to", name, err)
+	}
 
 	c := &connection{
+		name,
 		ws,
 		make(chan []byte, 256),
 	}
 
+	// keep track of the outbound channel for pubsubbery
+	sockets[name] = c.send
+
 	// this routine keeps the ws open with pings, and checks for/sends outbound messages
 	go c.writePump()
-
-	sockets[uuid] = c.send
 }
