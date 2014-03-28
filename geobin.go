@@ -3,29 +3,30 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
 	redis "github.com/vmihailenco/redis/v2"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"time"
-	"os"
 )
 
 type Config struct {
-  RedisHost string
-  Port int
-  NameVals string
-  NameLength int
+	RedisHost  string
+	Port       int
+	NameVals   string
+	NameLength int
 }
 
 // todo: determine if these need to be threadsafe
-var config = &Config {}
-var client = &redis.Client {}
-var pubsub = &redis.PubSub {}
-var sockets = make(map[string]chan []byte)
+var config = &Config{}
+var client = &redis.Client{}
+var pubsub = &redis.PubSub{}
+var sockets = make(map[string]*socket.S)
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -48,17 +49,17 @@ func init() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	http.Handle("/", r)
 
-  file, err := os.Open("config.json")
-  if err != nil {
-    log.Fatal(err)
-  }
-  decoder := json.NewDecoder(file)
-  err = decoder.Decode(&config)
-  if err != nil {
-    log.Fatal(err)
-  }
-  client = redis.NewTCPClient(&redis.Options{Addr: config.RedisHost})
-  pubsub = client.PubSub()
+	file, err := os.Open("config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	client = redis.NewTCPClient(&redis.Options{Addr: config.RedisHost})
+	pubsub = client.PubSub()
 }
 
 func main() {
@@ -194,6 +195,36 @@ func history(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(resp))
 }
 
+func openSocket(w http.ResponseWriter, r *http.Request) {
+	// upgrade the connection
+	name := mux.Vars(r)["name"]
+
+	// start pub subbing
+	if err := pubsub.Subscribe(name); err != nil {
+		log.Println("Failure to SUBSCRIBE to", name, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	s, err := socket.NewSocket(name, w, r)
+	if err != nil {
+		// if there is an error, NewSocket will have already written a response via http.Error()
+		// so only write a log
+		log.Println("Error opening websocket:", err)
+		return
+	}
+
+	s.SetOnCloseFunc(func() {
+		if err := pubsub.Unsubscribe(name); err != nil {
+			log.Println("Failure to UNSUBSCRIBE from", name, err)
+		}
+		delete(sockets, name)
+	})
+
+	// keep track of the outbound channel for pubsubbery
+	sockets[name] = s
+}
+
 func redisPump() {
 	for {
 		v, err := pubsub.Receive()
@@ -204,12 +235,12 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			wsChan, ok := sockets[v.Channel]
+			s, ok := sockets[v.Channel]
 			if !ok {
 				log.Println("Got message for unknown channel:", v.Channel)
 				return
 			}
-			wsChan <- []byte(v.Payload)
+			s.Write([]byte(v.Payload))
 		}
 	}
 }
