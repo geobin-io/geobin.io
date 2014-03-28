@@ -1,89 +1,32 @@
-// (function(){
-
-var map, features, binStore, primus, channel, ws;
+var map, features;
 
 var thisUrl = window.location.toString();
 var binId = window.location.pathname.substring(1);
 var notify = {};
 var requests = {};
 
-var navTpl = $('<div class="panel panel-default"> \
-  <div class="panel-heading" data-toggle="collapse"><h3 class="panel-title"></h3></div> \
-  <div class="list-group collapse"></div></div>');
+var navTpl = $('<div class="panel panel-default">' +
+  '<div class="panel-heading" data-toggle="collapse"><h3 class="panel-title"></h3></div>' +
+  '<div class="list-group collapse"></div></div>');
+
+function isJson(str) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
 
 init();
 
 function init () {
   initMap();
-  // initStore();
   bindUI();
   initSocket();
 }
 
 // initializer functions
-
-function initStore () {
-  if (!geobin.support.localStorage) {
-    return;
-  }
-
-  binStore = geobin.store.history[binId] = geobin.store.history[binId] || {};
-  geobin.save();
-
-  if (!Object.keys(binStore).length) {
-    return;
-  }
-
-  if ($('.waiting').length) {
-    $('.waiting').remove();
-  }
-
-  for (var id in binStore) {
-    if (binStore.hasOwnProperty(id) && !isNaN(id)) {
-      (function(id){
-        var d = new Date(+id);
-        var reqDate = d.toLocaleDateString();
-        var reqTime = d.toLocaleTimeString();
-        var reqJson = binStore[id];
-        var isNew = !requests[reqDate];
-        var navGroup;
-
-        requests[reqDate] = requests[reqDate] || {};
-
-        if (isNew) {
-          navGroup = navTpl.clone();
-          navGroup.attr('data-date', reqDate);
-          navGroup.find('.panel-heading').attr('data-target','.panel[data-date="' + reqDate + '"] .list-group');
-          navGroup.find('.panel-title').html('<i class="fa fa-calendar-o"></> ' + reqDate);
-        } else {
-          navGroup = $('.panel[data-date="' + reqDate + '"]');
-        }
-
-        requests[reqDate][reqTime] = reqJson;
-
-        var timestamp = '<i class="fa fa-clock-o"></> ' + reqTime;
-        var item = $('<a class="list-group-item" data-id="' + id + '">' + timestamp + '</a>');
-        var content = $('<pre class="json" data-id="' + id + '">' + JSON.stringify(reqJson, undefined, 2) + '</pre>');
-
-        searchForGeo(binStore[id]);
-
-        if (isNew) {
-          navGroup.hide().prependTo('.callback-nav').fadeIn();
-        }
-
-        item.hide().prependTo(navGroup.find('.list-group')).fadeIn();
-
-        content.prependTo('.callback-content');
-      })(id);
-    }
-  }
-
-  var latestDate = $('.callback-nav .list-group').first();
-  var latestTime = latestDate.find('>:first-child');
-  latestDate.addClass('in');
-  latestTime.addClass('active');
-  $('.callback-content > [data-id="' + latestTime.data('id') + '"').addClass('active');
-}
 
 function initMap () {
   map = L.map('map', {
@@ -114,27 +57,19 @@ function bindUI () {
 
 function initSocket () {
   var loc = window.location.origin.replace(/https?/,'ws');
-  ws = new WebSocket(loc + '/ws/' + binId);
-  // channel = primus.channel(binId);
+  var ws = new WebSocket(loc + '/ws/' + binId);
 
-  // primus.on('open', function () {
-  //   $('.status').text('is listening at ' + thisUrl).fadeIn();
-
-  //   if (!Object.keys(binStore).length) {
-  //     notify.success();
-  //   }
-  // });
-
-  // channel.on('data', processData);
   ws.onopen = function () {
     $('.status').text('is listening at ' + thisUrl).fadeIn();
-
-    // if (!Object.keys(binStore).length) {
     notify.success();
-    // }
   };
-  ws.onmessage = function () {
-    console.log(arguments);
+
+  ws.onmessage = function (event) {
+    console.log(event);
+    if (event && event.data && isJson(event.data)) {
+      console.log('hi');
+      processData(JSON.parse(event.data));
+    }
   };
 }
 
@@ -143,18 +78,11 @@ function initSocket () {
 notify.success = function () {
   var alerts = $('.alerts');
   var alert = $('<div class="alert alert-success"></div>');
-
   var sampleJson = '{"geo":{"latitude":"45.5165","longitude":"-122.6764"}}';
-
   var code = 'curl -X POST -H "Content-Type: application/json" -d \'' + sampleJson + '\' ' + thisUrl;
+  var html = '<strong>Connected!</strong> Try running <code>' + code + '</code> to get some feedback.';
 
-  alerts.empty();
-
-  alert
-    .html('<strong>Connected!</strong> Try running <code>' + code + '</code> to get some feedback.')
-    .hide()
-    .prependTo('.alerts')
-    .fadeIn();
+  alerts.empty().prepend(alert.html(html));
 };
 
 function processData (data) {
@@ -164,22 +92,17 @@ function processData (data) {
     $('.waiting').remove();
   }
 
-  var id = new Date().getTime();
+  var id = Number(data.timestamp);
   var d = new Date(id);
   var reqDate = d.toLocaleDateString();
   var reqTime = d.toLocaleTimeString();
-  var reqJson = data;
-  var isNew = !requests[reqDate];
+  var body = data.body;
+  var isNewDate = !requests[reqDate];
   var navGroup;
 
   requests[reqDate] = requests[reqDate] || {};
 
-  if (geobin.support.localStorage) {
-    geobin.store.history[binId][id] = reqJson;
-    geobin.save();
-  }
-
-  if (isNew) {
+  if (isNewDate) {
     navGroup = navTpl.clone();
     navGroup.attr('data-date', reqDate);
     navGroup.find('.panel-heading').attr('data-target','.panel[data-date="' + reqDate + '"] .list-group');
@@ -188,19 +111,20 @@ function processData (data) {
     navGroup = $('.panel[data-date="' + reqDate + '"]');
   }
 
-  requests[reqDate][reqTime] = reqJson;
+  requests[reqDate][reqTime] = body;
 
-  try {
-    data = JSON.stringify(data, undefined, 2);
-  } catch (e) {}
+  if (isJson(body)) {
+    body = JSON.parse(body);
+    searchForGeo(body);
+  }
 
-  searchForGeo(JSON.parse(data));
+
 
   var timestamp = '<i class="fa fa-clock-o"></> ' + reqTime;
   var item = $('<a class="list-group-item" data-id="' + id + '">' + timestamp + '</a>');
-  var content = $('<pre class="json" data-id="' + id + '">' + data + '</pre>');
+  var content = $('<pre class="json" data-id="' + id + '">' + syntaxHighlight( JSON.stringify(body, undefined, 2) ) + '</pre>');
 
-  if (isNew) {
+  if (isNewDate) {
     navGroup.hide().prependTo('.callback-nav').fadeIn();
   }
 
@@ -249,6 +173,7 @@ function searchForGeo (data) {
 // only doing point, point+radius, & geojson (polygon/multipolygon)
 function mapGeo (geo) {
   var layer;
+
   if (geo.latitude && geo.longitude && geo.distance) {
     layer = new L.Circle([geo.latitude, geo.longitude], geo.distance);
   }
@@ -268,5 +193,3 @@ function mapGeo (geo) {
     }
   }
 }
-
-//})();
