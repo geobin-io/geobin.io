@@ -94,7 +94,7 @@ func (s *s) readPump() {
 	for {
 		mt, message, err := s.ws.ReadMessage()
 		if err != nil {
-			log.Println("Error during socket read:", err)
+			log.Println("[" + s.name + "]", "Error during socket read:", err)
 			s.onClose(s.name)
 			s.ws.Close()
 			s.shutdown <- true
@@ -119,14 +119,14 @@ func (s *s) writePump() {
 			return
 		case message := <-s.send:
 			if err := s.write(websocket.TextMessage, message); err != nil {
-				log.Println("Error during socket write:", err)
+				log.Println("[" + s.name + "]", "Error during socket write:", err)
 				s.onClose(s.name)
 				s.ws.Close()
 				return
 			}
 		case <-ticker.C:
 			if err := s.write(websocket.PingMessage, []byte{}); err != nil {
-				log.Println("Error during ping for socket:", err)
+				log.Println("[" + s.name + "]", "Error during ping for socket:", err)
 				s.onClose(s.name)
 				s.ws.Close()
 				return

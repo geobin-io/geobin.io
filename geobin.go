@@ -30,6 +30,7 @@ var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
 var sockets = make(map[string]map[string]socket.S)
+var binHTML = ""
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -62,6 +63,12 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	binBytes, err := ioutil.ReadFile("static/bin.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	binHTML = string(binBytes)
 
 	// prepare redis
 	client = redis.NewTCPClient(&redis.Options{
@@ -161,12 +168,7 @@ func existing(w http.ResponseWriter, r *http.Request) {
 			log.Println("Failure to PUBLISH to", name, res.Err())
 		}
 	} else if r.Method == "GET" {
-		f, err := ioutil.ReadFile("static/bin.html")
-		if err != nil {
-			log.Println("Error while reading bin.html", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		fmt.Fprint(w, string(f))
+		fmt.Fprint(w, binHTML)
 	}
 }
 
