@@ -198,7 +198,7 @@ func redisPump() {
 	for {
 		v, err := pubsub.Receive()
 		if err != nil {
-			log.Println("Error from Redis PubSub:", err)
+			log.Fatal("Error from Redis PubSub:", err)
 			return
 		}
 
