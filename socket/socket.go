@@ -1,3 +1,6 @@
+// The `socket` package wraps the `github.com/gorilla/websocket` package with a basic implementation
+// based on their sample code, with the goal of greatly reducing the interface for some generalized
+// use cases.
 package socket
 
 import (
@@ -14,24 +17,40 @@ const (
 	pingPeriod = 60 * time.Second
 )
 
-// connection is a middleman between the websocket connection and redis.
-type S struct {
+// S exposes some methods for interacting with a websocket
+type S interface {
+	// Submits a payload to the web socket as a text message.
+	Write([]byte)
+	// Set the func that's called when a message is read from the socket.
+	// The call is made from a separate routine.
+	// The message types are defined in RFC 6455, section 11.8.
+	SetOnRead(func(int, []byte))
+	// Set the func that's called when the socket is being closed, typically due to a timeout
+	// when sending a message or possibly another io error in either direction.
+	// The call is made from a separate routine.
+	SetOnClose(func(string))
+}
+
+// implementation of S
+type s struct {
+	// a string associated with the socket
 	name string
-	// The websocket connection.
+
+	// the websocket connection
 	ws *websocket.Conn
 
-	// Buffered channel of outbound messages.
+	// buffered channel of outbound messages
 	send chan []byte
 
-	// Buffered channel of inbound messages.
-	// todo: should this be a func instead?
-	receive chan []byte
-
-	// func that's called from a separate routine when we are closing the socket
+	// event functions
+	onReceive func(messageType int, message []byte)
 	onClose func(name string)
 }
 
-func NewSocket(name string, w http.ResponseWriter, r *http.Request) (*S, error) {
+// Upgrade an existing TCP connection to a websocket connection in response to a client request for a websocket.
+// `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
+// in a call to the that can be reference with `SetOnClose()`.
+func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
 		http.Error(w, "Not a websocket handshake", http.StatusBadRequest)
@@ -41,7 +60,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (*S, error) 
 		return nil, err
 	}
 
-	s := &S{
+	s := &s{
 		name: name,
 		ws: ws,
 		send: make(chan []byte, 256),
@@ -52,20 +71,21 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (*S, error) 
 	return s, nil
 }
 
-func (s *S) SetOnCloseFunc(oc func(name string)) {
+
+func (s *s) SetOnClose(oc func(name string)) {
 	s.onClose = oc
 }
 
-func (s *S) Read() []byte {
-	msg := <- s.receive
-	return msg
+func (s *s) SetOnRead(or func(messageType int, message []byte)) {
+	s.onReceive = or
 }
 
-func (s *S) Write(payload []byte) {
+func (s *s) Write(payload []byte) {
 	s.send <- payload
 }
 
-func (s *S) readPump() {
+// readPump pumps messages from the websocket
+func (s *s) readPump() {
 	defer func() {
 		if s.onClose != nil {
 			s.onClose(s.name)
@@ -73,17 +93,19 @@ func (s *S) readPump() {
 		s.ws.Close()
 	}()
 	for {
-		_, message, err := s.ws.ReadMessage()
+		mt, message, err := s.ws.ReadMessage()
 		if err != nil {
 			return
 		}
 
-		s.receive <- message
+		if s.onReceive != nil {
+			s.onReceive(mt, message)
+		}
 	}
 }
 
-// writePump pumps messages to the websocket connection.
-func (s *S) writePump() {
+// writePump pumps messages to the websocket
+func (s *s) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -107,7 +129,7 @@ func (s *S) writePump() {
 }
 
 // writes a message with the given message type and payload.
-func (s *S) write(mt int, payload []byte) error {
+func (s *s) write(mt int, payload []byte) error {
 	s.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return s.ws.WriteMessage(mt, payload)
 }

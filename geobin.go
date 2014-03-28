@@ -16,17 +16,19 @@ import (
 )
 
 type Config struct {
-	RedisHost  string
 	Port       int
+	RedisHost  string
+	RedisPass  string
+	RedisDB    int64
 	NameVals   string
 	NameLength int
 }
 
-// todo: determine if these need to be threadsafe
+// todo: determine if these need to be threadsafe (pretty sure they do)
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var sockets = make(map[string]*socket.S)
+var sockets = make(map[string] socket.S)
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -49,6 +51,7 @@ func init() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	http.Handle("/", r)
 
+	// load up the config file
 	file, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +61,17 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	client = redis.NewTCPClient(&redis.Options{Addr: config.RedisHost})
+
+	// prepare redis
+	client = redis.NewTCPClient(&redis.Options{
+		Addr:     config.RedisHost,
+		Password: config.RedisPass,
+		DB:       config.RedisDB,
+	})
+
+	if ping := client.Ping(); ping.Err() != nil {
+		log.Fatal(ping.Err())
+	}
 	pubsub = client.PubSub()
 }
 
@@ -214,7 +227,7 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.SetOnCloseFunc(func(n string) {
+	s.SetOnClose(func(n string) {
 		if err := pubsub.Unsubscribe(name); err != nil {
 			log.Println("Failure to UNSUBSCRIBE from", n, err)
 		}
@@ -229,7 +242,7 @@ func redisPump() {
 	for {
 		v, err := pubsub.Receive()
 		if err != nil {
-			log.Fatal("Error from Redis PubSub:", err)
+			log.Println("Error from Redis PubSub:", err)
 			return
 		}
 
@@ -240,6 +253,7 @@ func redisPump() {
 				log.Println("Got message for unknown channel:", v.Channel)
 				return
 			}
+			log.Println("sending message to socket, you sucka")
 			s.Write([]byte(v.Payload))
 		}
 	}

@@ -1,6 +1,8 @@
 {
-  "RedisHost": "127.0.0.1:6379",
   "Port": 8080,
+  "RedisHost": "127.0.0.1:6379",
+  "RedisPass": "",
+  "RedisDB": 0,
   "NameVals": "023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
   "NameLength": 10
 }
