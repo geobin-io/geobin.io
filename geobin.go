@@ -214,11 +214,11 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.SetOnCloseFunc(func() {
+	s.SetOnCloseFunc(func(n string) {
 		if err := pubsub.Unsubscribe(name); err != nil {
-			log.Println("Failure to UNSUBSCRIBE from", name, err)
+			log.Println("Failure to UNSUBSCRIBE from", n, err)
 		}
-		delete(sockets, name)
+		delete(sockets, n)
 	})
 
 	// keep track of the outbound channel for pubsubbery

@@ -24,10 +24,11 @@ type S struct {
 	send chan []byte
 
 	// Buffered channel of inbound messages.
+	// todo: should this be a func instead?
 	receive chan []byte
 
-	// Buffered channel of inbound messages.
-	onClose func()
+	// func that's called from a separate routine when we are closing the socket
+	onClose func(name string)
 }
 
 func NewSocket(name string, w http.ResponseWriter, r *http.Request) (*S, error) {
@@ -51,7 +52,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (*S, error) 
 	return s, nil
 }
 
-func (s *S) SetOnCloseFunc(oc func()) {
+func (s *S) SetOnCloseFunc(oc func(name string)) {
 	s.onClose = oc
 }
 
@@ -67,7 +68,7 @@ func (s *S) Write(payload []byte) {
 func (s *S) readPump() {
 	defer func() {
 		if s.onClose != nil {
-			s.onClose()
+			s.onClose(s.name)
 		}
 		s.ws.Close()
 	}()
@@ -87,7 +88,7 @@ func (s *S) writePump() {
 	defer func() {
 		ticker.Stop()
 		if s.onClose != nil {
-			s.onClose()
+			s.onClose(s.name)
 		}
 		s.ws.Close()
 	}()
