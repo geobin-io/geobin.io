@@ -11,17 +11,20 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"os"
 )
 
-const (
-	redisHost = "127.0.0.1:6379"
-	nameVals  = "023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ"
-	nameLen   = 10
-)
+type Config struct {
+  RedisHost string
+  Port int
+  NameVals string
+  NameLength int
+}
 
 // todo: determine if these need to be threadsafe
-var client = redis.NewTCPClient(&redis.Options{Addr: redisHost})
-var pubsub = client.PubSub()
+var config = &Config {}
+var client = &redis.Client {}
+var pubsub = &redis.PubSub {}
 var sockets = make(map[string]chan []byte)
 
 type GeobinRequest struct {
@@ -44,6 +47,18 @@ func init() {
 	r.HandleFunc("/ws/{name}", openSocket)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	http.Handle("/", r)
+
+  file, err := os.Open("config.json")
+  if err != nil {
+    log.Fatal(err)
+  }
+  decoder := json.NewDecoder(file)
+  err = decoder.Decode(&config)
+  if err != nil {
+    log.Fatal(err)
+  }
+  client = redis.NewTCPClient(&redis.Options{Addr: config.RedisHost})
+  pubsub = client.PubSub()
 }
 
 func main() {
@@ -54,14 +69,14 @@ func main() {
 		pubsub.Close()
 		client.Close()
 	}()
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
-	n, err := randomString(nameLen)
+	n, err := randomString(config.NameLength)
 	if err != nil {
 		log.Println("Failure to create new name:", n, err)
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
@@ -183,7 +198,7 @@ func redisPump() {
 	for {
 		v, err := pubsub.Receive()
 		if err != nil {
-			log.Println("Error from Redis PubSub:", err)
+			log.Fatal("Error from Redis PubSub:", err)
 			return
 		}
 
@@ -202,7 +217,7 @@ func redisPump() {
 func randomString(length int) (string, error) {
 	b := make([]byte, length)
 	for i, _ := range b {
-		b[i] = nameVals[rand.Intn(len(nameVals))]
+		b[i] = config.NameVals[rand.Intn(len(config.NameVals))]
 	}
 
 	s := string(b)
