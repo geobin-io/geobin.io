@@ -68,6 +68,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: add date here so client can remove localStorage entry on expiration
 	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
@@ -130,9 +131,9 @@ func existing(w http.ResponseWriter, r *http.Request) {
 			log.Println("Failure to PUBLISH to", name, res.Err())
 		}
 	} else if r.Method == "GET" {
-		f, err := ioutil.ReadFile("templates/dashboard.html")
+		f, err := ioutil.ReadFile("static/bin.html")
 		if err != nil {
-			log.Println("Error while reading dashboard.html", err)
+			log.Println("Error while reading bin.html", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		fmt.Fprint(w, string(f))
