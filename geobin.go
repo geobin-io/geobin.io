@@ -313,11 +313,7 @@ func nameExists(name string) (bool, error) {
 	resp := client.Exists(name)
 	if resp.Err() != nil {
 		return false, resp.Err()
-	} else {
-		if resp.Val() {
-			return true, nil
-		} else {
-			return false, nil
-		}
 	}
+
+	return resp.Val(), nil
 }
