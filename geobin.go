@@ -6,6 +6,7 @@ import (
 	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
 	redis "github.com/vmihailenco/redis/v2"
+	gu "github.com/nu7hatch/gouuid"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -28,7 +29,7 @@ type Config struct {
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var sockets = make(map[string] socket.S)
+var sockets = make(map[string]map[string]socket.S)
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -211,16 +212,24 @@ func history(w http.ResponseWriter, r *http.Request) {
 
 func openSocket(w http.ResponseWriter, r *http.Request) {
 	// upgrade the connection
-	name := mux.Vars(r)["name"]
+	binName := mux.Vars(r)["name"]
 
 	// start pub subbing
-	if err := pubsub.Subscribe(name); err != nil {
-		log.Println("Failure to SUBSCRIBE to", name, err)
+	if err := pubsub.Subscribe(binName); err != nil {
+		log.Println("Failure to SUBSCRIBE to", binName, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	s, err := socket.NewSocket(name, w, r)
+	id, err := gu.NewV4()
+	if err != nil {
+		log.Println("Failure to generate new socket UUID", binName, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	uuid := id.String()
+
+	s, err := socket.NewSocket(binName + "~br~" + uuid, w, r)
 	if err != nil {
 		// if there is an error, NewSocket will have already written a response via http.Error()
 		// so only write a log
@@ -228,15 +237,30 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.SetOnClose(func(n string) {
-		if err := pubsub.Unsubscribe(name); err != nil {
-			log.Println("Failure to UNSUBSCRIBE from", n, err)
+	s.SetOnClose(func(socketName string) {
+		// the socketname is a composite of the bin name, and the socket UUID
+		ids := strings.Split(socketName, "~br~")
+		bn := ids[0]
+		suuid := ids[1]
+
+		socks, ok := sockets[bn]
+		if ok {
+			delete(socks, suuid)
+
+			if len(socks) == 0 {
+				delete(sockets, bn)
+				if err := pubsub.Unsubscribe(bn); err != nil {
+					log.Println("Failure to UNSUBSCRIBE from", bn, err)
+				}
+			}
 		}
-		delete(sockets, n)
 	})
 
 	// keep track of the outbound channel for pubsubbery
-	sockets[name] = s
+	if _, ok := sockets[binName]; !ok {
+		sockets[binName] = make(map[string]socket.S)
+	}
+	sockets[binName][uuid] = s
 }
 
 func redisPump() {
@@ -249,13 +273,17 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			s, ok := sockets[v.Channel]
+			sockMap, ok := sockets[v.Channel]
 			if !ok {
 				log.Println("Got message for unknown channel:", v.Channel)
 				return
 			}
-			log.Println("sending message to socket, you sucka")
-			s.Write([]byte(v.Payload))
+
+			for _, sock := range sockMap {
+				go func(s socket.S, p []byte) {
+					s.Write(p)
+				}(sock, []byte(v.Payload))
+			}
 		}
 	}
 }

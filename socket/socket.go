@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
+	"log"
 )
 
 const (
@@ -42,6 +43,8 @@ type s struct {
 	// buffered channel of outbound messages
 	send chan []byte
 
+	shutdown chan bool
+
 	// event functions
 	onReceive func(messageType int, message []byte)
 	onClose func(name string)
@@ -64,13 +67,15 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 		name: name,
 		ws: ws,
 		send: make(chan []byte, 256),
+		shutdown: make(chan bool),
+		onReceive: func(int, []byte){},
+		onClose: func(string){},
 	}
 
 	go s.writePump()
 	go s.readPump()
 	return s, nil
 }
-
 
 func (s *s) SetOnClose(oc func(name string)) {
 	s.onClose = oc
@@ -86,15 +91,13 @@ func (s *s) Write(payload []byte) {
 
 // readPump pumps messages from the websocket
 func (s *s) readPump() {
-	defer func() {
-		if s.onClose != nil {
-			s.onClose(s.name)
-		}
-		s.ws.Close()
-	}()
 	for {
 		mt, message, err := s.ws.ReadMessage()
 		if err != nil {
+			log.Println("Error during socket read:", err)
+			s.onClose(s.name)
+			s.ws.Close()
+			s.shutdown <- true
 			return
 		}
 
@@ -109,19 +112,23 @@ func (s *s) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		if s.onClose != nil {
-			s.onClose(s.name)
-		}
-		s.ws.Close()
 	}()
 	for {
 		select {
+		case <- s.shutdown:
+			return
 		case message := <-s.send:
 			if err := s.write(websocket.TextMessage, message); err != nil {
+				log.Println("Error during socket write:", err)
+				s.onClose(s.name)
+				s.ws.Close()
 				return
 			}
 		case <-ticker.C:
 			if err := s.write(websocket.PingMessage, []byte{}); err != nil {
+				log.Println("Error during ping for socket:", err)
+				s.onClose(s.name)
+				s.ws.Close()
 				return
 			}
 		}
