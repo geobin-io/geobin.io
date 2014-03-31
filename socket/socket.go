@@ -82,7 +82,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 // Create a client web socket connection to the host running at the provided URL.
 // `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
 // by calling a provided function (settable with `SetOnClose()`).
-func NewClientSocket(name string, socketUrl string) (S, error) {
+func NewClient(name string, socketUrl string) (S, error) {
 	u, err := url.Parse(socketUrl)
 	if err != nil {
 		log.Println("Could not parse URL from provided URL string:", socketUrl, err)
