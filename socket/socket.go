@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 	"log"
+	"net/url"
+	"net"
 )
 
 const (
@@ -26,8 +28,8 @@ type S interface {
 	// The call is made from a separate routine.
 	// The message types are defined in RFC 6455, section 11.8.
 	SetOnRead(func(int, []byte))
-	// Set the func that's called when the socket is being closed, typically due to a timeout
-	// when sending a message or possibly another io error in either direction.
+	// Set the func that's called when the socket is being closed, typically due to an unexpected EOF during
+	// socket read (indicating that the connection was closed from the other end).
 	// The call is made from a separate routine.
 	SetOnClose(func(string))
 }
@@ -46,13 +48,13 @@ type s struct {
 	shutdown chan bool
 
 	// event functions
-	onReceive func(messageType int, message []byte)
+	onRead func(messageType int, message []byte)
 	onClose func(name string)
 }
 
 // Upgrade an existing TCP connection to a websocket connection in response to a client request for a websocket.
 // `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
-// in a call to the that can be reference with `SetOnClose()`.
+// by calling a provided function (settable with `SetOnClose()`).
 func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
@@ -64,12 +66,48 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 	}
 
 	s := &s{
-		name: name,
-		ws: ws,
-		send: make(chan []byte, 256),
+		name:     name,
+		ws:       ws,
+		send:     make(chan []byte, 256),
 		shutdown: make(chan bool),
-		onReceive: func(int, []byte){},
-		onClose: func(string){},
+		onRead:   func(int, []byte){},
+		onClose:  func(string){},
+	}
+
+	go s.writePump()
+	go s.readPump()
+	return s, nil
+}
+
+// Create a client web socket connection to the host running at the provided URL.
+// `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
+// by calling a provided function (settable with `SetOnClose()`).
+func NewClientSocket(name string, socketUrl string) (S, error) {
+	u, err := url.Parse(socketUrl)
+	if err != nil {
+		log.Println("Could not parse URL from provided URL string:", socketUrl, err)
+		return nil, err
+	}
+
+	conn, err := net.Dial("tcp", u.Host)
+	if err != nil {
+		log.Println("Could not connect to provided host:", u.Host, err)
+		return nil, err
+	}
+
+	ws, _, err := websocket.NewClient(conn, u, nil, 1024, 1024)
+	if err != nil {
+		log.Println("Error while opening websocket:", err)
+		return nil, err
+	}
+
+	s := &s{
+		name:      name,
+		ws:        ws,
+		send:      make(chan []byte, 256),
+		shutdown:  make(chan bool),
+		onRead:    func(int, []byte) {},
+		onClose:   func(string) {},
 	}
 
 	go s.writePump()
@@ -94,16 +132,16 @@ func (s *s) readPump() {
 	for {
 		mt, message, err := s.ws.ReadMessage()
 		if err != nil {
-			log.Println("[" + s.name + "]", "Error during socket read:", err)
+			// This happens anytime a client closes the connection, which can end up with
+			// chatty logs, so we aren't logging this error currently.  If we did, it would look like:
+ 			// log.Println("[" + s.name + "]", "Error during socket read:", err)
 			s.onClose(s.name)
 			s.ws.Close()
 			s.shutdown <- true
 			return
 		}
 
-		if s.onReceive != nil {
-			s.onReceive(mt, message)
-		}
+		s.onReceive(mt, message)
 	}
 }
 

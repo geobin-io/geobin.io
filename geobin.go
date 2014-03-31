@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
-	redis "github.com/vmihailenco/redis/v2"
 	gu "github.com/nu7hatch/gouuid"
+	redis "github.com/vmihailenco/redis/v2"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -106,6 +106,8 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add date here so client can remove localStorage entry on expiration
+	// Add a placeholder to create the set in redis, so that we can set the expiration on it now.
+	// This placeholder is not returned in the JSON from a request to /history/{name}.
 	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
@@ -231,7 +233,7 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := id.String()
 
-	s, err := socket.NewSocket(binName + "~br~" + uuid, w, r)
+	s, err := socket.NewSocket(binName+"~br~"+uuid, w, r)
 	if err != nil {
 		// if there is an error, NewSocket will have already written a response via http.Error()
 		// so only write a log
