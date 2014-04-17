@@ -120,7 +120,7 @@ func (s *s) SetOnClose(oc func(name string)) {
 }
 
 func (s *s) SetOnRead(or func(messageType int, message []byte)) {
-	s.onReceive = or
+	s.onRead = or
 }
 
 func (s *s) Write(payload []byte) {
@@ -141,7 +141,7 @@ func (s *s) readPump() {
 			return
 		}
 
-		s.onReceive(mt, message)
+		s.onRead(mt, message)
 	}
 }
 
