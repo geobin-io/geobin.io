@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
 	gu "github.com/nu7hatch/gouuid"
@@ -12,6 +13,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -26,11 +28,10 @@ type Config struct {
 	NameLength int
 }
 
-// TODO: determine if these need to be threadsafe (pretty sure they do)
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var sockets = make(map[string]map[string]socket.S)
+var socketManager = manager.NewManager(make(map[string]map[string]socket.S))
 var binHTML = ""
 
 type GeobinRequest struct {
@@ -60,6 +61,7 @@ func main() {
  * Initilization
  */
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	// add file info to log statements
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
 	// set up unique seed for random num generation
@@ -297,24 +299,28 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		bn := ids[0]
 		suuid := ids[1]
 
-		socks, ok := sockets[bn]
-		if ok {
-			delete(socks, suuid)
+		manageSockets(func(sockets map[string]map[string]socket.S) {
+			socks, ok := sockets[bn]
+			if ok {
+				delete(socks, suuid)
 
-			if len(socks) == 0 {
-				delete(sockets, bn)
-				if err := pubsub.Unsubscribe(bn); err != nil {
-					log.Println("Failure to UNSUBSCRIBE from", bn, err)
+				if len(socks) == 0 {
+					delete(sockets, bn)
+					if err := pubsub.Unsubscribe(bn); err != nil {
+						log.Println("Failure to UNSUBSCRIBE from", bn, err)
+					}
 				}
 			}
-		}
+		})
 	})
 
 	// keep track of the outbound channel for pubsubbery
-	if _, ok := sockets[binName]; !ok {
-		sockets[binName] = make(map[string]socket.S)
-	}
-	sockets[binName][uuid] = s
+	go manageSockets(func(sockets map[string]map[string]socket.S) {
+		if _, ok := sockets[binName]; !ok {
+			sockets[binName] = make(map[string]socket.S)
+		}
+		sockets[binName][uuid] = s
+	})
 }
 
 /*
@@ -330,7 +336,12 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			sockMap, ok := sockets[v.Channel]
+			var sockMap map[string]socket.S
+			var ok bool
+			manageSockets(func(sockets map[string]map[string]socket.S) {
+				sockMap, ok = sockets[v.Channel]
+			})
+
 			if !ok {
 				log.Println("Got message for unknown channel:", v.Channel)
 				return
@@ -376,4 +387,12 @@ func nameExists(name string) (bool, error) {
 	}
 
 	return resp.Val(), nil
+}
+
+func manageSockets(sf func(sockets map[string]map[string]socket.S)) {
+	socketManager.Touch(func(o interface{}) {
+		if sockets, ok := o.(map[string]map[string]socket.S); ok {
+			sf(sockets)
+		}
+	})
 }
