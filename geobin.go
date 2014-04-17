@@ -25,7 +25,7 @@ type Config struct {
 	NameLength int
 }
 
-// todo: determine if these need to be threadsafe (pretty sure they do)
+// TODO: determine if these need to be threadsafe (pretty sure they do)
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
@@ -46,11 +46,18 @@ func init() {
 
 	// prepare router
 	r := mux.NewRouter()
-	r.HandleFunc("/create", create)
-	r.HandleFunc("/{name}", existing)
-	r.HandleFunc("/history/{name}", history)
-	r.HandleFunc("/ws/{name}", openSocket)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
+	api := r.PathPrefix("/api").Subrouter()
+	api.HandleFunc("/create", create)
+	api.HandleFunc("/{name}", existing)
+	api.HandleFunc("/history/{name}", history)
+	api.HandleFunc("/ws/{name}", openSocket)
+
+	r.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		http.ServeFile(w, req, req.URL.Path[1:])
+	})	
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		http.ServeFile(w, req, "static/index.html")
+	})
 	http.Handle("/", r)
 
 	// load up the config file
@@ -120,7 +127,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/"+n, http.StatusFound)
+	http.Redirect(w, r, "/api/"+n, http.StatusFound)
 }
 
 func existing(w http.ResponseWriter, r *http.Request) {

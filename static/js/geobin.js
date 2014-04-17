@@ -102,7 +102,7 @@
     // initializer functions
 
     function getHistory () {
-      $.get('/history/' + binId, function(data) {
+      $.get('/api/history/' + binId, function(data) {
         console.log(data);
       });
     }
@@ -136,7 +136,7 @@
 
     function initSocket () {
       var loc = window.location.origin.replace(/https?/,'ws');
-      var ws = new WebSocket(loc + '/ws/' + binId);
+      var ws = new WebSocket(loc + '/api/ws/' + binId);
 
       ws.onopen = function () {
         $('.status').text('is listening at ' + url).fadeIn();
