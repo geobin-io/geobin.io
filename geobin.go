@@ -38,6 +38,25 @@ type GeobinRequest struct {
 	Body      string            `json:"body"`
 }
 
+func main() {
+	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
+	go redisPump()
+
+	defer func() {
+		pubsub.Close()
+		client.Close()
+	}()
+
+	// Start up HTTP server
+	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
+
+/*
+ * Initilization
+ */
 func init() {
 	// add file info to log statements
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
@@ -106,20 +125,9 @@ func createRouter() *mux.Router {
 	return r
 }
 
-func main() {
-	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
-	go redisPump()
-
-	defer func() {
-		pubsub.Close()
-		client.Close()
-	}()
-	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
-}
-
+/*
+ * API Routes
+ */
 func create(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	n, err := randomString(config.NameLength)
@@ -294,6 +302,9 @@ func openSocket(w http.ResponseWriter, r *http.Request) {
 	sockets[binName][uuid] = s
 }
 
+/*
+ * Redis
+ */
 func redisPump() {
 	for {
 		v, err := pubsub.Receive()
@@ -319,6 +330,9 @@ func redisPump() {
 	}
 }
 
+/*
+ * Utils
+ */
 func randomString(length int) (string, error) {
 	b := make([]byte, length)
 	for i, _ := range b {
