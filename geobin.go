@@ -106,6 +106,9 @@ func createRouter() *mux.Router {
 	api.HandleFunc("/history/{name}", historyHandler)
 	api.HandleFunc("/ws/{name}", wsHandler)
 
+	// Our bread and/or butter (how requests actually get put into redis)
+	r.HandleFunc("/{name}", binHandler).Methods("POST")
+
 	// Client/web requests (GETs only!)
 	web := r.Methods("GET").Subrouter()
 	// Any GET request to the /api/ route will serve up the docs static site directly.
@@ -171,8 +174,8 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func existingHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "existing - %v\n", r.URL)
+func binHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "bin - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 
 	exists, err := nameExists(name)
@@ -186,40 +189,36 @@ func existingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "POST" {
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Println("Error while reading POST body:", err)
-			http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
-			return
-		}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println("Error while reading POST body:", err)
+		http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
+		return
+	}
 
-		headers := make(map[string]string)
-		for k, v := range r.Header {
-			headers[k] = strings.Join(v, ", ")
-		}
+	headers := make(map[string]string)
+	for k, v := range r.Header {
+		headers[k] = strings.Join(v, ", ")
+	}
 
-		gr := GeobinRequest{
-			Timestamp: time.Now().UTC().Unix(),
-			Headers:   headers,
-			Body:      string(body),
-		}
+	gr := GeobinRequest{
+		Timestamp: time.Now().UTC().Unix(),
+		Headers:   headers,
+		Body:      string(body),
+	}
 
-		encoded, err := json.Marshal(gr)
-		if err != nil {
-			log.Println("Error marshalling request:", err)
-		}
+	encoded, err := json.Marshal(gr)
+	if err != nil {
+		log.Println("Error marshalling request:", err)
+	}
 
-		if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), string(encoded)}); res.Err() != nil {
-			log.Println("Failure to ZADD to", name, res.Err())
-		}
+	if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), string(encoded)}); res.Err() != nil {
+		log.Println("Failure to ZADD to", name, res.Err())
+	}
 
-		if res := client.Publish(name, string(encoded)); res.Err() != nil {
-			log.Println("Failure to PUBLISH to", name, res.Err())
-		}
-	} else if r.Method == "GET" {
-		fmt.Fprint(w, binHTML)
+	if res := client.Publish(name, string(encoded)); res.Err() != nil {
+		log.Println("Failure to PUBLISH to", name, res.Err())
 	}
 }
 
