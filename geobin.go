@@ -100,9 +100,9 @@ func createRouter() *mux.Router {
 	r := mux.NewRouter()
 	// API routes (POSTs only!)
 	api := r.Methods("POST").PathPrefix("/api/{v:[0-9.]+}/").Subrouter()
-	api.HandleFunc("/create", create)
-	api.HandleFunc("/history/{name}", history)
-	api.HandleFunc("/ws/{name}", openSocket)
+	api.HandleFunc("/create", createHandler)
+	api.HandleFunc("/history/{name}", historyHandler)
+	api.HandleFunc("/ws/{name}", wsHandler)
 
 	// Client/web requests (GETs only!)
 	web := r.Methods("GET").Subrouter()
@@ -128,7 +128,7 @@ func createRouter() *mux.Router {
 /*
  * API Routes
  */
-func create(w http.ResponseWriter, r *http.Request) {
+func createHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	n, err := randomString(config.NameLength)
 	if err != nil {
@@ -137,25 +137,39 @@ func create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: add date here so client can remove localStorage entry on expiration
-	// Add a placeholder to create the set in redis, so that we can set the expiration on it now.
-	// This placeholder is not returned in the JSON from a request to /history/{name}.
 	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
 
-	if res := client.Expire(n, 48*time.Hour); res.Err() != nil {
+	d := 48*time.Hour
+	if res := client.Expire(n, d); res.Err() != nil {
 		log.Println("Failure to set EXPIRE for", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
+	exp := time.Now().Add(d).Unix()
 
-	http.Redirect(w, r, "/api/"+n, http.StatusFound)
+	bin := map[string]interface{} {
+		"id": n,
+		"expires": exp,
+	}
+	binJson, err := json.Marshal(bin)
+	if err != nil {
+		log.Println("Failure to create json for new name:", n, err)
+		// I know this error message is ridiculous, but I don't know how this would ever happen so...
+		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not make a JSON object for it!", n), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(binJson); err != nil {
+		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we failed to write to the response!", n), http.StatusInternalServerError)
+		return
+	}
 }
 
-func existing(w http.ResponseWriter, r *http.Request) {
+func existingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "existing - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 
@@ -207,7 +221,7 @@ func existing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func history(w http.ResponseWriter, r *http.Request) {
+func historyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "history - %v", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
@@ -248,7 +262,7 @@ func history(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(resp))
 }
 
-func openSocket(w http.ResponseWriter, r *http.Request) {
+func wsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
