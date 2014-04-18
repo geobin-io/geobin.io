@@ -46,16 +46,28 @@ func init() {
 
 	// prepare router
 	r := mux.NewRouter()
-	api := r.PathPrefix("/api").Subrouter()
+
+	// API routes (POSTs only!)
+	api := r.Methods("POST").PathPrefix("/api/{v:[0-9.]+}/").Subrouter()
 	api.HandleFunc("/create", create)
-	api.HandleFunc("/{name}", existing)
 	api.HandleFunc("/history/{name}", history)
 	api.HandleFunc("/ws/{name}", openSocket)
 
-	r.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	// Client/web requests (GETs only!)
+	web := r.Methods("GET").Subrouter()
+	// Any GET request to the /api/ route will serve up the docs static site directly.
+	web.PathPrefix("/api/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(os.Stdout, "docs - %v\n", req.URL)
+		http.ServeFile(w, req, "docs/build/")
+	})
+	// Any GET request to the /static/ route will serve the files in the static dir directly.
+	web.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(os.Stdout, "static - %v\n", req.URL)
 		http.ServeFile(w, req, req.URL.Path[1:])
 	})	
-	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	// All other GET requests will serve up the Angular app at static/index.html
+	web.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(os.Stdout, "web - %v\n", req.URL)
 		http.ServeFile(w, req, "static/index.html")
 	})
 	http.Handle("/", r)
@@ -105,6 +117,7 @@ func main() {
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	n, err := randomString(config.NameLength)
 	if err != nil {
 		log.Println("Failure to create new name:", n, err)
@@ -131,6 +144,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 }
 
 func existing(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "existing - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 
 	exists, err := nameExists(name)
@@ -182,6 +196,7 @@ func existing(w http.ResponseWriter, r *http.Request) {
 }
 
 func history(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "history - %v", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
 	if err != nil {
@@ -222,6 +237,7 @@ func history(w http.ResponseWriter, r *http.Request) {
 }
 
 func openSocket(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "create - %v", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
 
