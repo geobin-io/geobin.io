@@ -48,7 +48,11 @@ func init() {
 	r := createRouter()
 	http.Handle("/", r)
 
-	// load up the config file
+	loadConfig()
+	setupRedis()
+}
+
+func loadConfig() {
 	file, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal(err)
@@ -58,14 +62,9 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
 
-	binBytes, err := ioutil.ReadFile("static/bin.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-	binHTML = string(binBytes)
-
-	// prepare redis
+func setupRedis() {
 	client = redis.NewTCPClient(&redis.Options{
 		Addr:     config.RedisHost,
 		Password: config.RedisPass,
