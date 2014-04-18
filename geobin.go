@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	Host       string
 	Port       int
 	RedisHost  string
 	RedisPass  string
@@ -46,7 +47,8 @@ func main() {
 	}()
 
 	// Start up HTTP server
-	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
+	fmt.Fprintf(os.Stdout, "Starting server at %v:%d\n", config.Host, config.Port)
+	err := http.ListenAndServe(fmt.Sprintf("%v:%d", config.Host, config.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
