@@ -135,11 +135,7 @@ func createRouter() *mux.Router {
 /*
  * API Routes
  */
-<<<<<<< HEAD
 func createHandler(w http.ResponseWriter, r *http.Request) {
-=======
-func create(w http.ResponseWriter, r *http.Request) {
->>>>>>> Organize geobin.go a bit
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	n, err := randomString(config.NameLength)
 	if err != nil {
