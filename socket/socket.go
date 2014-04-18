@@ -28,10 +28,14 @@ type S interface {
 	// The call is made from a separate routine.
 	// The message types are defined in RFC 6455, section 11.8.
 	SetOnRead(func(int, []byte))
-	// Set the func that's called when the socket is being closed, typically due to an unexpected EOF during
+	// Set the func that's called when the socket is just about to be closed, typically due to an unexpected EOF during
 	// socket read (indicating that the connection was closed from the other end).
 	// The call is made from a separate routine.
 	SetOnClose(func(string))
+	// return the provided name
+	GetName() string
+	// Close the socket.
+	Close()
 }
 
 // implementation of S
@@ -65,18 +69,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request) (S, error) {
 		return nil, err
 	}
 
-	s := &s{
-		name:     name,
-		ws:       ws,
-		send:     make(chan []byte, 256),
-		shutdown: make(chan bool),
-		onRead:   func(int, []byte){},
-		onClose:  func(string){},
-	}
-
-	go s.writePump()
-	go s.readPump()
-	return s, nil
+	return socketSetup(name, ws), nil
 }
 
 // Create a client web socket connection to the host running at the provided URL.
@@ -101,30 +94,47 @@ func NewClient(name string, socketUrl string) (S, error) {
 		return nil, err
 	}
 
+	return socketSetup(name, ws), nil
+}
+
+func socketSetup(name string, ws *websocket.Conn) S {
 	s := &s{
 		name:      name,
 		ws:        ws,
 		send:      make(chan []byte, 256),
 		shutdown:  make(chan bool),
-		onRead:    func(int, []byte) {},
-		onClose:   func(string) {},
+		onRead:    func(int, []byte){},
+		onClose:   func(string){},
 	}
 
 	go s.writePump()
 	go s.readPump()
-	return s, nil
+	return s
 }
 
 func (s *s) SetOnClose(oc func(name string)) {
-	s.onClose = oc
+	if oc != nil {
+		s.onClose = oc
+	}
 }
 
 func (s *s) SetOnRead(or func(messageType int, message []byte)) {
-	s.onRead = or
+	if or != nil {
+		s.onRead = or
+	}
 }
 
 func (s *s) Write(payload []byte) {
 	s.send <- payload
+}
+
+func (s *s) Close() {
+	s.onClose(s.name)
+	s.ws.Close()
+}
+
+func (s *s) GetName() string {
+	return s.name
 }
 
 // readPump pumps messages from the websocket
@@ -135,8 +145,7 @@ func (s *s) readPump() {
 			// This happens anytime a client closes the connection, which can end up with
 			// chatty logs, so we aren't logging this error currently.  If we did, it would look like:
  			// log.Println("[" + s.name + "]", "Error during socket read:", err)
-			s.onClose(s.name)
-			s.ws.Close()
+			s.Close()
 			s.shutdown <- true
 			return
 		}
@@ -158,15 +167,13 @@ func (s *s) writePump() {
 		case message := <-s.send:
 			if err := s.write(websocket.TextMessage, message); err != nil {
 				log.Println("[" + s.name + "]", "Error during socket write:", err)
-				s.onClose(s.name)
-				s.ws.Close()
+				s.Close()
 				return
 			}
 		case <-ticker.C:
 			if err := s.write(websocket.PingMessage, []byte{}); err != nil {
 				log.Println("[" + s.name + "]", "Error during ping for socket:", err)
-				s.onClose(s.name)
-				s.ws.Close()
+				s.Close()
 				return
 			}
 		}
