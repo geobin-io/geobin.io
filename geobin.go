@@ -100,9 +100,9 @@ func createRouter() *mux.Router {
 	r := mux.NewRouter()
 	// API routes (POSTs only!)
 	api := r.Methods("POST").PathPrefix("/api/{v:[0-9.]+}/").Subrouter()
-	api.HandleFunc("/create", create)
-	api.HandleFunc("/history/{name}", history)
-	api.HandleFunc("/ws/{name}", openSocket)
+	api.HandleFunc("/create", createHandler)
+	api.HandleFunc("/history/{name}", historyHandler)
+	api.HandleFunc("/ws/{name}", wsHandler)
 
 	// Client/web requests (GETs only!)
 	web := r.Methods("GET").Subrouter()
@@ -128,7 +128,7 @@ func createRouter() *mux.Router {
 /*
  * API Routes
  */
-func create(w http.ResponseWriter, r *http.Request) {
+func createHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	n, err := randomString(config.NameLength)
 	if err != nil {
@@ -155,7 +155,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/api/"+n, http.StatusFound)
 }
 
-func existing(w http.ResponseWriter, r *http.Request) {
+func existingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "existing - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 
@@ -207,7 +207,7 @@ func existing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func history(w http.ResponseWriter, r *http.Request) {
+func historyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "history - %v", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
@@ -248,7 +248,7 @@ func history(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(resp))
 }
 
-func openSocket(w http.ResponseWriter, r *http.Request) {
+func wsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
