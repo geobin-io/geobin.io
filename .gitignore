@@ -2,3 +2,6 @@
 geobin-go
 connection
 dump.rdb
+.DS_Store
+node_modules/
+static/app/components/
