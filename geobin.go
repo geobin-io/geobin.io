@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	gu "github.com/nu7hatch/gouuid"
 	redis "github.com/vmihailenco/redis/v2"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -30,6 +31,7 @@ var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
 var sockets = make(map[string]map[string]socket.S)
+var binHTML = ""
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -166,6 +168,58 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(binJson); err != nil {
 		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we failed to write to the response!", n), http.StatusInternalServerError)
 		return
+	}
+}
+
+func existingHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(os.Stdout, "existing - %v\n", r.URL)
+	name := mux.Vars(r)["name"]
+
+	exists, err := nameExists(name)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !exists {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method == "POST" {
+		defer r.Body.Close()
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Println("Error while reading POST body:", err)
+			http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
+			return
+		}
+
+		headers := make(map[string]string)
+		for k, v := range r.Header {
+			headers[k] = strings.Join(v, ", ")
+		}
+
+		gr := GeobinRequest{
+			Timestamp: time.Now().UTC().Unix(),
+			Headers:   headers,
+			Body:      string(body),
+		}
+
+		encoded, err := json.Marshal(gr)
+		if err != nil {
+			log.Println("Error marshalling request:", err)
+		}
+
+		if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), string(encoded)}); res.Err() != nil {
+			log.Println("Failure to ZADD to", name, res.Err())
+		}
+
+		if res := client.Publish(name, string(encoded)); res.Err() != nil {
+			log.Println("Failure to PUBLISH to", name, res.Err())
+		}
+	} else if r.Method == "GET" {
+		fmt.Fprint(w, binHTML)
 	}
 }
 
