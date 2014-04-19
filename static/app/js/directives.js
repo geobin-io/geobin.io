@@ -1,11 +1,15 @@
-'use strict';
+(function(){
 
-// Directives
-angular.module('Geobin.directives', [])
+  'use strict';
 
-// App Version
-.directive('appVersion', ['version', function(version) {
-  return function(scope, elm, attrs) {
-    elm.text(version);
-  };
-}]);
+  // Directives
+  angular.module('Geobin.directives', [])
+
+  // App Version
+  .directive('appVersion', ['version', function(version) {
+    return function(scope, elm, attrs) {
+      elm.text(version);
+    };
+  }]);
+
+})();

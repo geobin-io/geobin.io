@@ -1,27 +1,29 @@
-'use strict';
+(function(){
 
+  'use strict';
 
-// Declare app level module which depends on filters, and services
-angular.module('Geobin', [
-  'ngRoute',
-  'Geobin.filters',
-  'Geobin.services',
-  'Geobin.directives',
-  'Geobin.controllers',
-  'chieffancypants.loadingBar'
-])
+  angular.module('Geobin', [
+    'ngRoute',
+    'Geobin.filters',
+    'Geobin.services',
+    'Geobin.directives',
+    'Geobin.controllers',
+    'chieffancypants.loadingBar'
+  ])
 
-.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
-  $locationProvider.html5Mode(true);
+  .config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
+    $locationProvider.html5Mode(true);
 
-  $routeProvider
-    .when('/', {
-      controller: 'HomeCtrl',
-      templateUrl: '/static/app/partials/home.html'
-    })
-    .when('/:binId', {
-      controller: 'BinCtrl',
-      templateUrl: '/static/app/partials/bin.html'
-    })
-    .otherwise({redirectTo: '/'});
-}]);
+    $routeProvider
+      .when('/', {
+        controller: 'HomeCtrl',
+        templateUrl: '/static/app/partials/home.html'
+      })
+      .when('/:binId', {
+        controller: 'BinCtrl',
+        templateUrl: '/static/app/partials/bin.html'
+      })
+      .otherwise({redirectTo: '/'});
+  }]);
+
+})();
