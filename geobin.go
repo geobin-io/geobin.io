@@ -6,6 +6,7 @@ import (
 	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
+	gj "github.com/kpawlik/geojson"
 	gu "github.com/nu7hatch/gouuid"
 	redis "github.com/vmihailenco/redis/v2"
 	"io/ioutil"
@@ -13,7 +14,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -37,6 +40,37 @@ type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
+	Geo       string            `json: "geo,omitempty"`
+}
+
+func (gr *GeobinRequest) ParseForGeo() {
+	// TODO: MAGIC... Currently this just looks for something in the body that looks
+	// like a lat and a long, grabs the first of each and makes a Point in Geojson.
+	// What this will need to *actually* do is first detect if we received geojson in
+	// the body and just pass it right along to gr.Geo. If the body does not contain 
+	// geojson then we need to search for lat/long similar to how this is doing it
+	// but if there's more than one we need to figure out what to do then. Multiple
+	// points? Lines? Polys? I dunno...
+
+	latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
+	lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+
+	var lat, lng float64
+	var foundLat, foundLng bool
+	if latMatches := latRegex.FindStringSubmatch(gr.Body); latMatches != nil {
+		lat, _ = strconv.ParseFloat(latMatches[1], 64)
+		foundLat = true
+	}
+
+	if lngMatches := lngRegex.FindStringSubmatch(gr.Body); lngMatches != nil {
+		lng, _ = strconv.ParseFloat(lngMatches[1], 64)
+		foundLng = true
+	}
+
+	if foundLat && foundLng {
+		p := gj.NewPoint(gj.Coordinate{gj.CoordType(lat), gj.CoordType(lng)})
+		gr.Geo, _ = gj.Marshal(p)
+	}
 }
 
 func main() {
@@ -210,6 +244,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 		Headers:   headers,
 		Body:      string(body),
 	}
+	gr.ParseForGeo()
 
 	encoded, err := json.Marshal(gr)
 	if err != nil {
