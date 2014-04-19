@@ -14,7 +14,7 @@ import (
 
 func TestRoundTrip(t *testing.T) {
 	msgReceived := false
-	ts := makeSocketServer(t, "test_socket", func(messageType int, message []byte) {
+	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
 		msgReceived = true
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
@@ -22,11 +22,11 @@ func TestRoundTrip(t *testing.T) {
 	test.Expect(t, msgReceived, true)
 }
 
-func TestManyRoundTrips(t *testing.T) {
+func TestManyRoundTripsManySockets(t *testing.T) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	defer runtime.GOMAXPROCS(1)
 	var msgCount uint64 = 0
-	ts := makeSocketServer(t, "test_socket", func(messageType int, message []byte) {
+	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
@@ -45,9 +45,41 @@ func TestManyRoundTrips(t *testing.T) {
 	test.Expect(t, msgCount, uint64(count))
 }
 
+func TestManyMessagesSingleSocket(t *testing.T) {
+	count := 1000
+	interval := 100 * time.Microsecond
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sck, err := NewSocket("test_socket", w, r)
+		if err != nil {
+			t.Error("Error creating websocket:", err)
+		}
+
+		go func(s S) {
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+			for i := 0; i < count; i++ {
+				<- ticker.C
+				s.Write([]byte("You got a message!"))
+			}
+		}(sck)
+	}))
+	defer ts.Close()
+
+	var msgCount uint64 = 0
+	makeClient(t, ts.URL, "test_client", func(messageType int, message []byte) {
+		atomic.AddUint64(&msgCount, 1)
+		test.Expect(t, string(message), "You got a message!")
+	}, nil)
+
+	millis := float64(count) * 1.2
+	time.Sleep(time.Duration(millis) * interval)
+	test.Expect(t, msgCount, uint64(count))
+}
+
 func TestOnClose(t *testing.T) {
 	serverClosed := false
-	ts := makeSocketServer(t, "test_socket", nil, func(name string) {
+	ts := makeRoundTripServer(t, "test_socket", nil, func(name string) {
 		serverClosed = true
 		test.Expect(t, name, "test_socket")
 	})
@@ -66,7 +98,7 @@ func TestOnClose(t *testing.T) {
 	test.Expect(t, serverClosed, true)
 }
 
-func makeSocketServer(t *testing.T, name string, or func(int, []byte), oc func(string)) (*httptest.Server){
+func makeRoundTripServer(t *testing.T, name string, or func(int, []byte), oc func(string)) (*httptest.Server){
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sck, err := NewSocket(name, w, r)
 		if err != nil {
