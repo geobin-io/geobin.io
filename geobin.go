@@ -156,7 +156,7 @@ func createRouter() *mux.Router {
 	web.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(os.Stdout, "static - %v\n", req.URL)
 		http.ServeFile(w, req, req.URL.Path[1:])
-	})	
+	})
 	// All other GET requests will serve up the Angular app at static/index.html
 	web.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(os.Stdout, "web - %v\n", req.URL)
@@ -187,7 +187,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set expiration
-	d := 48*time.Hour
+	d := 48 * time.Hour
 	if res := client.Expire(n, d); res.Err() != nil {
 		log.Println("Failure to set EXPIRE for", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
@@ -197,13 +197,13 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create the json response and encoder
 	encoder := json.NewEncoder(w)
-	bin := map[string]interface{} {
-		"id": n,
+	bin := map[string]interface{}{
+		"id":      n,
 		"expires": exp,
 	}
 
 	// encode the json directly to the response writer
-	err = encoder.Encode(bin) 
+	err = encoder.Encode(bin)
 	if err != nil {
 		log.Println("Failure to create json for new name:", n, err)
 		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not return the JSON for it!", n), http.StatusInternalServerError)
