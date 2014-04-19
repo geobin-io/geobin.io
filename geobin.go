@@ -136,6 +136,8 @@ func createRouter() *mux.Router {
  */
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
+
+	// Get a new name
 	n, err := randomString(config.NameLength)
 	if err != nil {
 		log.Println("Failure to create new name:", n, err)
@@ -143,12 +145,14 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save to redis
 	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
 
+	// Set expiration
 	d := 48*time.Hour
 	if res := client.Expire(n, d); res.Err() != nil {
 		log.Println("Failure to set EXPIRE for", n, res.Err())
@@ -157,20 +161,18 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	exp := time.Now().Add(d).Unix()
 
+	// Create the json response and encoder
+	encoder := json.NewEncoder(w)
 	bin := map[string]interface{} {
 		"id": n,
 		"expires": exp,
 	}
-	binJson, err := json.Marshal(bin)
+
+	// encode the json directly to the response writer
+	err = encoder.Encode(bin) 
 	if err != nil {
 		log.Println("Failure to create json for new name:", n, err)
-		// I know this error message is ridiculous, but I don't know how this would ever happen so...
-		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not make a JSON object for it!", n), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(binJson); err != nil {
-		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we failed to write to the response!", n), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not return the JSON for it!", n), http.StatusInternalServerError)
 		return
 	}
 }
@@ -254,14 +256,13 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		history = append(history, gr)
 	}
 
-	resp, err := json.Marshal(history)
+	encoder := json.NewEncoder(w)
+	err = encoder.Encode(history)
 	if err != nil {
 		log.Println("Error marshalling request history:", err)
 		http.Error(w, "Could not generate history.", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprint(w, string(resp))
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
