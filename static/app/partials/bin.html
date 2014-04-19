@@ -1,7 +1,6 @@
 <div class="container">
-  <p>This is the partial for bins. Current bin ID: {{ binId }}.</p>
-  <p>
-    Showing of 'interpolate' filter:
-    {{ 'Current version is v%VERSION%.' | interpolate }}
-  </p>
+  <ul class="list-group">
+    <li class="list-group-item" ng-repeat="item in history track by $index">{{item}}</li>
+    <li class="list-group-item" ng-show="!history.length" role="presentation" class="dropdown-header">No history yet. Try posting to <code>http://{{host}}/{{binId}}</code></li>
+  </ul>
 </div>

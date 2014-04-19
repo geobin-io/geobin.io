@@ -1,3 +1,28 @@
 <div class="container">
-  <p>This is the partial for home. Check out bin <a href="/4d3d3d3">4d3d3d3</a>.</p>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="page-header">
+        <h1>Inspect HTTP Requests with Geographic Data</h1>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-9">
+      <p>
+        <a class="btn btn-primary btn-lg" role="button" ng-click="create()">
+          <i class="fa fa-magic"></i> Create a New Geobin
+        </a>
+      </p>
+    </div>
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-clock-o"></i> History</div>
+
+        <ul class="list-group history-nav">
+          <li class="list-group-item" ng-repeat="item in bins track by $index"><a href="/{{item.id}}">{{item.id}}</a></li>
+          <li class="list-group-item" ng-show="!bins.length" role="presentation" class="dropdown-header">Nothing to see here. Make a new geobin!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>

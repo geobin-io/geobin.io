@@ -36,13 +36,9 @@ body {
 .navbar a {
   cursor: pointer;
 }
-
 .navbar-brand {
   margin-bottom: 0;
 }
-
 .navbar-brand .brand {
   font-weight: bold;
 }
-
-

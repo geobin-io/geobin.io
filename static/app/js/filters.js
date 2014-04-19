@@ -1,11 +1,15 @@
-'use strict';
+(function(){
 
-// Filters
-angular.module('Geobin.filters', [])
+  'use strict';
 
-// Interpolate filter
-.filter('interpolate', ['version', function(version) {
-  return function(text) {
-    return String(text).replace(/\%VERSION\%/mg, version);
-  };
-}]);
+  // Filters
+  angular.module('Geobin.filters', [])
+
+  // Interpolate filter
+  .filter('interpolate', ['version', function(version) {
+    return function(text) {
+      return String(text).replace(/\%VERSION\%/mg, version);
+    };
+  }]);
+
+})();
