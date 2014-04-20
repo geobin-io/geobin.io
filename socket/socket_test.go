@@ -13,13 +13,18 @@ import (
 )
 
 func TestRoundTrip(t *testing.T) {
+	lock := &sync.Mutex{}
 	msgReceived := false
 	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
+		lock.Lock()
 		msgReceived = true
+		lock.Unlock()
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 	roundTrip(t, ts, "test_client")
+	lock.Lock()
 	test.Expect(t, msgReceived, true)
+	lock.Unlock()
 }
 
 func TestManyRoundTripsManySockets(t *testing.T) {
@@ -50,7 +55,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	interval := 100 * time.Microsecond
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sck, err := NewSocket("test_socket", w, r)
+		sck, err := NewSocket("test_socket", w, r, nil, nil)
 		if err != nil {
 			t.Error("Error creating websocket:", err)
 		}
@@ -79,34 +84,42 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 
 func TestOnClose(t *testing.T) {
 	serverClosed := false
+	serverLock := &sync.Mutex{}
+	clientLock := &sync.Mutex{}
 	ts := makeRoundTripServer(t, "test_socket", nil, func(name string) {
+		serverLock.Lock()
 		serverClosed = true
+		serverLock.Unlock()
 		test.Expect(t, name, "test_socket")
 	})
 	defer ts.Close()
 
 	clientClosed := false
 	client := makeClient(t, ts.URL, "test_client", nil, func(name string) {
+		clientLock.Lock()
 		clientClosed = true
+		clientLock.Unlock()
 		test.Expect(t, name, "test_client")
 	})
 
 	client.Close()
 
 	time.Sleep(100 * time.Microsecond)
-	test.Expect(t, clientClosed, true)
+
+	serverLock.Lock()
 	test.Expect(t, serverClosed, true)
+	serverLock.Unlock()
+	clientLock.Lock()
+	test.Expect(t, clientClosed, true)
+	clientLock.Unlock()
 }
 
 func makeRoundTripServer(t *testing.T, name string, or func(int, []byte), oc func(string)) (*httptest.Server){
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sck, err := NewSocket(name, w, r)
+		sck, err := NewSocket(name, w, r, or, oc)
 		if err != nil {
 			t.Error("Error creating websocket:", err)
 		}
-
-		sck.SetOnRead(or)
-		sck.SetOnClose(oc)
 
 		sck.Write([]byte("You got a message!"))
 	}))
@@ -115,25 +128,28 @@ func makeRoundTripServer(t *testing.T, name string, or func(int, []byte), oc fun
 }
 
 func makeClient(t *testing.T, url string, name string, or func(int, []byte), oc func(string)) S {
-	client, err := NewClient(name, url)
+	client, err := NewClient(name, url, or, oc)
 	if err != nil {
 		t.Error("Error opening client socket:", name, err)
 	}
 
-	client.SetOnRead(or)
-	client.SetOnClose(oc)
 	return client
 }
 
 func roundTrip(t *testing.T, ts *httptest.Server, clientName string) {
+	lock := &sync.Mutex{}
 	msgReceived := false
 	client := makeClient(t, ts.URL, clientName, func(messageType int, message []byte) {
+		lock.Lock()
 		msgReceived = true
+		lock.Unlock()
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 	client.Write([]byte("You got a message!"))
 
 	// sleep a lil bit to allow the server to write back to the websocket
 	time.Sleep(25 * time.Millisecond)
+	lock.Lock()
 	test.Expect(t, msgReceived, true)
+	lock.Unlock()
 }
