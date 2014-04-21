@@ -95,7 +95,7 @@ func TestOnClose(t *testing.T) {
 
 	time.Sleep(100 * time.Microsecond)
 
-	//	test.Expect(t, atomic.LoadUint64(&serverClosed), uint64(1))
+	test.Expect(t, atomic.LoadUint64(&serverClosed), uint64(1))
 	test.Expect(t, atomic.LoadUint64(&clientClosed), uint64(1))
 }
 
