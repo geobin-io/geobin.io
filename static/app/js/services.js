@@ -16,8 +16,23 @@
     // localStorage interface for browser-based user persistence
 
     var store = this.store = new TinyStore('geobin');
-    store.session.history = store.session.history || [];
-    store.save();
+    var hist = getHistory(store);
+
+    function getHistory (store) {
+      var h = store.session.history = store.session.history || [];
+
+      for (var i = h.length - 1; i >= 0; i--) {
+        var diff = h[i].expires - Math.floor(new Date().getTime() / 1000);
+        console.log(diff);
+        if (diff < 1) {
+          h.splice(i, 1);
+        }
+      }
+
+      store.save();
+
+      return h;
+    }
 
     // User
     // ----

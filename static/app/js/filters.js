@@ -12,15 +12,21 @@
     };
   }])
 
-  .filter('prettyDate', [function(){
+  .filter('timeRemaining', [function(){
     return function(ts) {
-      var d = new Date(ts * 1000);
-      var dateString = d.getHours() + ':' + d.getMinutes() + ' ' +
-        + ('0' + (d.getMonth()+1)).slice(-2) + '/'
-        + ('0' + d.getDate()).slice(-2) + '/'
-        + d.getFullYear();
-      return dateString;
-    }
+      var n = Math.floor(new Date().getTime() / 1000);
+      var diff = ts - n;
+      if (diff < 1) {
+        return 'expired';
+      }
+      if (diff > 3600) {
+        return Math.floor(diff / 3600) + ' hours';
+      }
+      if (diff > 60) {
+        return Math.floor(diff / 60) + ' minutes';
+      }
+      return diff + 'seconds';
+    };
   }]);
 
 })();

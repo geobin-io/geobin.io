@@ -5,13 +5,14 @@
   <title>geobin.io</title>
   <base href="/">
   <link rel="stylesheet" href="/static/app/components/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/app/components/Bootflat/bootflat/css/bootflat.min.css">
   <link rel="stylesheet" href="/static/app/components/fontawesome/css/font-awesome.min.css">
   <link rel="stylesheet" href="/static/app/components/angular-loading-bar/build/loading-bar.min.css">
   <link rel="stylesheet" href="/static/app/css/app.css">
 </head>
 <body>
 
-<header ng-controller="NavCtrl" class="navbar navbar-default navbar-fixed-top" role="navigation">
+<header ng-controller="NavCtrl" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
   <div class="container-fluid">
     <div class="navbar-header">
       <button ng-cloak type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -34,15 +35,22 @@
       <div class="navbar-right" ng-cloak>
         <ul class="nav navbar-nav">
           <li class="dropdown">
-            <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-clock-o"></i> Recent <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li ng-repeat="item in bins track by $index"><a href="/{{item.id}}">{{item.id}}</a></li>
+            <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-clock-o"></i> History <b class="caret"></b></a>
+            <ul class="dropdown-menu dropdown-history">
+              <li ng-repeat="item in bins track by $index">
+                <a href="/{{item.id}}" class="clearfix">
+                  {{item.id}}
+                  <small class="text-muted expires">{{item.expires | timeRemaining}} left</small>
+                </a>
+              </li>
               <li ng-show="!bins.length" role="presentation" class="dropdown-header">Nothing to see here. Make a new geobin!</li>
-              <li role="presentation" class="divider"></li>
-              <li><a ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</a></li>
             </ul>
           </li>
         </ul>
+      </div>
+
+      <div class="navbar-right" ng-cloak>
+        <button type="button" class="btn btn-create btn-primary navbar-btn pull-left" ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button>
       </div>
     </div>
   </div>
@@ -59,6 +67,7 @@
 
 <script src="/static/app/components/jquery/dist/jquery.min.js"></script>
 <script src="/static/app/components/tinystore/tinystore.min.js"></script>
+<script src="/static/app/components/humanize/humanize.js"></script>
 <script>
 // include angular loader, which allows the files to load in any order
 //@@NG_LOADER_START@@
