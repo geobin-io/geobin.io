@@ -5,11 +5,12 @@ package socket
 
 import (
 	"github.com/gorilla/websocket"
-	"net/http"
-	"time"
 	"log"
-	"net/url"
 	"net"
+	"net/http"
+	"net/url"
+	"sync"
+	"time"
 )
 
 const (
@@ -41,10 +42,12 @@ type s struct {
 	// buffered channel of outbound messages
 	send chan []byte
 
-	shutdown chan bool
+	shutdown  chan bool
+	closed    bool
+	closeLock *sync.Mutex
 
 	// event functions
-	onRead func(messageType int, message []byte)
+	onRead  func(messageType int, message []byte)
 	onClose func(name string)
 }
 
@@ -101,11 +104,11 @@ func NewClient(name string, socketUrl string, or func(int, []byte), oc func(stri
 
 func socketSetup(name string, ws *websocket.Conn, or func(int, []byte), oc func(string)) S {
 	if or == nil {
-		or = func(int, []byte){}
+		or = func(int, []byte) {}
 	}
 
 	if oc == nil {
-		oc = func(string){}
+		oc = func(string) {}
 	}
 
 	s := &s{
@@ -113,6 +116,8 @@ func socketSetup(name string, ws *websocket.Conn, or func(int, []byte), oc func(
 		ws:        ws,
 		send:      make(chan []byte, 256),
 		shutdown:  make(chan bool),
+		closed:    false,
+		closeLock: &sync.Mutex{},
 		onRead:    or,
 		onClose:   oc,
 	}
@@ -122,23 +127,18 @@ func socketSetup(name string, ws *websocket.Conn, or func(int, []byte), oc func(
 	return s
 }
 
-func (s *s) SetOnClose(oc func(name string)) {
-	if oc != nil {
-		s.onClose = oc
-	}
-}
-
-func (s *s) SetOnRead(or func(messageType int, message []byte)) {
-	if or != nil {
-		s.onRead = or
-	}
-}
-
 func (s *s) Write(payload []byte) {
 	s.send <- payload
 }
 
 func (s *s) Close() {
+	s.closeLock.Lock()
+	if s.closed {
+		return
+	}
+	s.closed = true
+	s.closeLock.Unlock()
+
 	s.onClose(s.name)
 	s.ws.Close()
 }
@@ -154,7 +154,7 @@ func (s *s) readPump() {
 		if err != nil {
 			// This happens anytime a client closes the connection, which can end up with
 			// chatty logs, so we aren't logging this error currently.  If we did, it would look like:
- 			// log.Println("[" + s.name + "]", "Error during socket read:", err)
+			// log.Println("[" + s.name + "]", "Error during socket read:", err)
 			s.Close()
 			s.shutdown <- true
 			return
@@ -172,17 +172,17 @@ func (s *s) writePump() {
 	}()
 	for {
 		select {
-		case <- s.shutdown:
+		case <-s.shutdown:
 			return
 		case message := <-s.send:
 			if err := s.write(websocket.TextMessage, message); err != nil {
-				log.Println("[" + s.name + "]", "Error during socket write:", err)
+				log.Println("["+s.name+"]", "Error during socket write:", err)
 				s.Close()
 				return
 			}
 		case <-ticker.C:
 			if err := s.write(websocket.PingMessage, []byte{}); err != nil {
-				log.Println("[" + s.name + "]", "Error during ping for socket:", err)
+				log.Println("["+s.name+"]", "Error during ping for socket:", err)
 				s.Close()
 				return
 			}

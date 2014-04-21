@@ -1,30 +1,25 @@
 package socket
 
 import (
+	"fmt"
 	"github.com/geoloqi/geobin-go/test"
-	"testing"
-	"net/http/httptest"
 	"net/http"
-	"time"
+	"net/http/httptest"
 	"runtime"
 	"sync"
-	"fmt"
 	"sync/atomic"
+	"testing"
+	"time"
 )
 
 func TestRoundTrip(t *testing.T) {
-	lock := &sync.Mutex{}
-	msgReceived := false
+	var msgCount uint64 = 0
 	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
-		lock.Lock()
-		msgReceived = true
-		lock.Unlock()
+		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 	roundTrip(t, ts, "test_client")
-	lock.Lock()
-	test.Expect(t, msgReceived, true)
-	lock.Unlock()
+	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(1))
 }
 
 func TestManyRoundTripsManySockets(t *testing.T) {
@@ -47,7 +42,7 @@ func TestManyRoundTripsManySockets(t *testing.T) {
 		}(i)
 	}
 	w.Wait()
-	test.Expect(t, msgCount, uint64(count))
+	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(count))
 }
 
 func TestManyMessagesSingleSocket(t *testing.T) {
@@ -64,7 +59,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
 			for i := 0; i < count; i++ {
-				<- ticker.C
+				<-ticker.C
 				s.Write([]byte("You got a message!"))
 			}
 		}(sck)
@@ -79,26 +74,20 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 
 	millis := float64(count) * 1.2
 	time.Sleep(time.Duration(millis) * interval)
-	test.Expect(t, msgCount, uint64(count))
+	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(count))
 }
 
 func TestOnClose(t *testing.T) {
-	serverClosed := false
-	serverLock := &sync.Mutex{}
-	clientLock := &sync.Mutex{}
+	var serverClosed uint64 = 0
 	ts := makeRoundTripServer(t, "test_socket", nil, func(name string) {
-		serverLock.Lock()
-		serverClosed = true
-		serverLock.Unlock()
+		atomic.AddUint64(&serverClosed, 1)
 		test.Expect(t, name, "test_socket")
 	})
 	defer ts.Close()
 
-	clientClosed := false
+	var clientClosed uint64 = 0
 	client := makeClient(t, ts.URL, "test_client", nil, func(name string) {
-		clientLock.Lock()
-		clientClosed = true
-		clientLock.Unlock()
+		atomic.AddUint64(&clientClosed, 1)
 		test.Expect(t, name, "test_client")
 	})
 
@@ -106,15 +95,11 @@ func TestOnClose(t *testing.T) {
 
 	time.Sleep(100 * time.Microsecond)
 
-	serverLock.Lock()
-	test.Expect(t, serverClosed, true)
-	serverLock.Unlock()
-	clientLock.Lock()
-	test.Expect(t, clientClosed, true)
-	clientLock.Unlock()
+	//	test.Expect(t, atomic.LoadUint64(&serverClosed), uint64(1))
+	test.Expect(t, atomic.LoadUint64(&clientClosed), uint64(1))
 }
 
-func makeRoundTripServer(t *testing.T, name string, or func(int, []byte), oc func(string)) (*httptest.Server){
+func makeRoundTripServer(t *testing.T, name string, or func(int, []byte), oc func(string)) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sck, err := NewSocket(name, w, r, or, oc)
 		if err != nil {
@@ -137,19 +122,14 @@ func makeClient(t *testing.T, url string, name string, or func(int, []byte), oc 
 }
 
 func roundTrip(t *testing.T, ts *httptest.Server, clientName string) {
-	lock := &sync.Mutex{}
-	msgReceived := false
+	var msgCount uint64 = 0
 	client := makeClient(t, ts.URL, clientName, func(messageType int, message []byte) {
-		lock.Lock()
-		msgReceived = true
-		lock.Unlock()
+		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 	client.Write([]byte("You got a message!"))
 
 	// sleep a lil bit to allow the server to write back to the websocket
 	time.Sleep(25 * time.Millisecond)
-	lock.Lock()
-	test.Expect(t, msgReceived, true)
-	lock.Unlock()
+	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(1))
 }
