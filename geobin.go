@@ -32,7 +32,6 @@ var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
 var socketManager = manager.NewManager(make(map[string]map[string]socket.S))
-var binHTML = ""
 
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
@@ -285,15 +284,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := id.String()
 
-	s, err := socket.NewSocket(binName+"~br~"+uuid, w, r)
-	if err != nil {
-		// if there is an error, NewSocket will have already written a response via http.Error()
-		// so only write a log
-		log.Println("Error opening websocket:", err)
-		return
-	}
-
-	s.SetOnClose(func(socketName string) {
+	s, err := socket.NewSocket(binName+"~br~"+uuid, w, r, nil, func(socketName string) {
 		// the socketname is a composite of the bin name, and the socket UUID
 		ids := strings.Split(socketName, "~br~")
 		bn := ids[0]
@@ -313,6 +304,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		})
 	})
+
+	if err != nil {
+		// if there is an error, NewSocket will have already written a response via http.Error()
+		// so only write a log
+		log.Println("Error opening websocket:", err)
+		return
+	}
 
 	// keep track of the outbound channel for pubsubbery
 	go manageSockets(func(sockets map[string]map[string]socket.S) {
