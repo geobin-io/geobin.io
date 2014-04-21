@@ -7,19 +7,19 @@
     </div>
   </div>
   <div class="row">
-    <div class="col-md-9">
+    <div class="col-md-8">
       <p>
         <a class="btn btn-primary btn-lg" role="button" ng-click="create()">
           <i class="fa fa-magic"></i> Create a New Geobin
         </a>
       </p>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-clock-o"></i> History</div>
+        <div class="panel-heading"><i class="fa fa-clock-o"></i> Recent</div>
 
         <ul class="list-group history-nav">
-          <li class="list-group-item" ng-repeat="item in bins track by $index"><a href="/{{item.id}}">{{item.id}}</a></li>
+          <li class="list-group-item" ng-repeat="item in bins track by $index"><a href="/{{item.id}}">{{item.id}}</a> <p class="pull-right">expires at {{item.expires | prettyDate}}</p></li>
           <li class="list-group-item" ng-show="!bins.length" role="presentation" class="dropdown-header">Nothing to see here. Make a new geobin!</li>
         </ul>
       </div>
