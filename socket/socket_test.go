@@ -5,7 +5,6 @@ import (
 	"github.com/geoloqi/geobin-go/test"
 	"net/http"
 	"net/http/httptest"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -23,8 +22,6 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestManyRoundTripsManySockets(t *testing.T) {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	defer runtime.GOMAXPROCS(1)
 	var msgCount uint64 = 0
 	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
@@ -93,7 +90,8 @@ func TestOnClose(t *testing.T) {
 
 	client.Close()
 
-	time.Sleep(100 * time.Microsecond)
+	// sleep a lil bit to allow the socket channels to communicate the shut down
+	time.Sleep(250 * time.Microsecond)
 
 	test.Expect(t, atomic.LoadUint64(&serverClosed), uint64(1))
 	test.Expect(t, atomic.LoadUint64(&clientClosed), uint64(1))
