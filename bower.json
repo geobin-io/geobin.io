@@ -13,6 +13,7 @@
     "bootstrap": "~3.1.1",
     "fontawesome": "~4.0.3",
     "angular-loading-bar": "~0.3.0",
-    "tinystore": "~0.0.4"
+    "tinystore": "~0.0.4",
+    "Bootflat": "~2.0.1"
   }
 }
