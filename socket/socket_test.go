@@ -72,8 +72,8 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 
-	millis := float64(count) * 1.2
-	time.Sleep(time.Duration(millis) * interval)
+	micros := float64(count) * 1.2
+	time.Sleep(time.Duration(micros) * interval)
 	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(count))
 }
 
