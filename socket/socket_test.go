@@ -46,10 +46,10 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	count := 1000
 	interval := 100 * time.Microsecond
 
-	var readCount uint64 = 0
+	var serverMsgReceivedCount uint64 = 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sck, err := NewSocket("test_socket", w, r, func(messageType int, message []byte) {
-			atomic.AddUint64(&readCount, 1)
+			atomic.AddUint64(&serverMsgReceivedCount, 1)
 			test.Expect(t, string(message), "You got a message!")
 		}, nil)
 
@@ -57,28 +57,26 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 			t.Error("Error creating websocket:", err)
 		}
 
+		// when a request comes in, start writing lotsa messages to it
 		go writeLotsaMessages(sck, count, interval)
 	}))
 	defer ts.Close()
 
-	var msgCount uint64 = 0
+	var clientMsgReceivedCount uint64 = 0
 	client := makeClient(t, ts.URL, "test_client", func(messageType int, message []byte) {
-		atomic.AddUint64(&msgCount, 1)
+		atomic.AddUint64(&clientMsgReceivedCount, 1)
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 
-	// a sleep duration ~20% longer than the time needed to write all the messages
-	micros := time.Duration(float64(count) * 1.2) * interval
-
-	// sleep a bit to let the messages be sent
-	time.Sleep(micros)
-	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(count))
-
+	// we opened a client connection, starting sending lotsa messages to the server
 	go writeLotsaMessages(client, count, interval)
 
+	// a sleep duration ~50% longer than the time needed to write all the messages
+	micros := time.Duration(float64(count) * 1.5) * interval
 	// sleep a bit to let the messages be sent
 	time.Sleep(micros)
-	test.Expect(t, atomic.LoadUint64(&readCount), uint64(count))
+	test.Expect(t, atomic.LoadUint64(&clientMsgReceivedCount), uint64(count))
+	test.Expect(t, atomic.LoadUint64(&serverMsgReceivedCount), uint64(count))
 }
 
 func TestOnClose(t *testing.T) {
