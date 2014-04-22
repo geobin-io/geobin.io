@@ -72,39 +72,65 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
 		} else {
 			fmt.Fprintln(os.Stdout, "Found type:", t)
+			unmarshal := func(buf []byte, target interface{}) (e error) {
+				if e = json.Unmarshal(buf, target); e != nil {
+					fmt.Fprintf(os.Stdout, "couldn't unmarshal %v to geojson: %v\n", t, e)
+				}
+				return
+			}
 			switch t {
 			case "Point":
-				var c []interface{}
-				if err = gtjson.GetValueFromJSONObject(js, "coordinates", &c); err != nil {
-					fmt.Fprintln(os.Stdout, "Get value from json for Point failed:", err)
+				var p gj.Point
+				if err = unmarshal(b, &p); err != nil {
 					break
 				}
 
-				geo = gj.NewPoint(gj.Coordinate{gj.CoordType(c[0].(float64)), gj.CoordType(c[1].(float64))})
-				fmt.Fprintln(os.Stdout, "Found geo:", geo)
+				geo = p
 				foundGeojson = true
 				break
 			case "LineString":
-				var coords []interface{}
-				if err = gtjson.GetValueFromJSONObject(js, "coordinates", &coords); err != nil {
-					fmt.Fprintln(os.Stdout, "Get value from json for LineString failed:", err)
+				var ls gj.LineString
+				if err = unmarshal(b, &ls); err != nil {
 					break
 				}
 
-				cs := make(gj.Coordinates, 0)
-				for i, c := range(coords) {
-					var x, y float64
-					ca := c.([]interface{})
-					xerr := gtjson.GetValueFromJSONArray(ca, 0, &x)
-					yerr := gtjson.GetValueFromJSONArray(ca, 1, &y)
-					if xerr != nil || yerr != nil {
-						fmt.Fprintln(os.Stdout, "Get value from json array for LineString failed:", i, xerr, yerr)
-						break
-					}
-					cs = append(cs, gj.Coordinate{gj.CoordType(x), gj.CoordType(y)})
+				geo = ls
+				foundGeojson = true
+				break
+			case "Polygon":
+				var p gj.Polygon
+				if err = unmarshal(b, &p); err != nil {
+					break
 				}
-				geo = gj.NewLineString(cs)
-				fmt.Fprintln(os.Stdout, "Found geo:", geo)
+
+				geo = p
+				foundGeojson = true
+				break
+			case "MultiPoint":
+				var mp gj.MultiPoint
+				if err = unmarshal(b, &mp); err != nil {
+					break
+				}
+
+				geo = mp
+				foundGeojson = true
+				break
+			case "MultiPolygon":
+				var mp gj.MultiPolygon
+				if err = unmarshal(b, &mp); err != nil {
+					break
+				}
+
+				geo = mp
+				foundGeojson = true
+				break
+			case "GeometryCollection":
+				var gc gj.GeometryCollection
+				if err = unmarshal(b, &gc); err != nil {
+					break
+				}
+
+				geo = gc
 				foundGeojson = true
 				break
 			default:
@@ -139,7 +165,10 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 		}
 	}
 
-	gr.Geo, _ = gj.Marshal(geo)
+	if geo != nil {
+		fmt.Fprintln(os.Stdout, "Found geo:", geo)
+		gr.Geo, _ = gj.Marshal(geo)
+	}
 	return &gr
 }
 

@@ -4,21 +4,21 @@ import "testing"
 import "github.com/geoloqi/geobin-go/test"
 import "strings"
 
-func TestRequestWithGJPoint(t *testing.T) {
-	js := `{ "type": "Point", "coordinates": [100, 0] }`
+var r *strings.Replacer = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
+func runTest(js string, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
-	test.Expect(t, gr.Geo, strings.Replace(js, " ", "", -1))
+	test.Expect(t, gr.Geo, r.Replace(js))
+}
+
+func TestRequestWithGJPoint(t *testing.T) {
+	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, t)
 }
 
 func TestRequestWithGJLineString(t *testing.T) {
-	js := `{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`
-
-	gr := NewGeobinRequest(0, nil, []byte(js))
-	test.Expect(t, gr.Geo, strings.Replace(js, " ", "", -1))
+	runTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, t)
 }
 
-/*
 func TestRequestWithGJPolygon(t *testing.T) {
 	jsNoHoles := `{
 		"type": "Polygon",
@@ -33,6 +33,9 @@ func TestRequestWithGJPolygon(t *testing.T) {
 			[ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
 		]
 	}`
+
+	runTest(jsNoHoles, t)
+	runTest(jsHoles, t)
 }
 
 func TestRequestWithGJMultiPoint(t *testing.T) {
@@ -40,6 +43,7 @@ func TestRequestWithGJMultiPoint(t *testing.T) {
 		"type": "MultiPoint",
 		"coordinates": [ [100, 0], [101, 1] ]
 	}`
+	runTest(js, t)
 }
 
 func TestRequestWithGJMultiPolygon(t *testing.T) {
@@ -51,6 +55,7 @@ func TestRequestWithGJMultiPolygon(t *testing.T) {
 			[[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]
 		]
 	}`
+	runTest(js, t)
 }
 
 func TestRequestWithGJGeometryCollection(t *testing.T) {
@@ -58,18 +63,19 @@ func TestRequestWithGJGeometryCollection(t *testing.T) {
 		"type": "GeometryCollection",
     "geometries": [
       {
-				"type": "Point",
-        "coordinates": [100, 0]
+        "coordinates": [100, 0],
+				"type": "Point"
 			},
       {
-				"type": "LineString",
-        "coordinates": [ [101, 0], [102, 1] ]
+        "coordinates": [ [101, 0], [102, 1] ],
+				"type": "LineString"
 			}
     ]
   }`
+  runTest(js, t)
 }
 
-func TestRequestWithGJFeatur(t *testing.T) {
+func TestRequestWithGJFeature(t *testing.T) {
 	// TODO:
 }
 
@@ -88,4 +94,3 @@ func TestRequestWithNoGJPoints(t *testing.T) {
 func TestRequestwithNoGJPointAndRadius(t *testing.T) {
 	// TODO:
 }
-*/
