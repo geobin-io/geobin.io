@@ -71,13 +71,14 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 		if err = gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
 			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
 		} else {
-			fmt.Fprintln(os.Stdout, "Found type:", t)
 			unmarshal := func(buf []byte, target interface{}) (e error) {
 				if e = json.Unmarshal(buf, target); e != nil {
 					fmt.Fprintf(os.Stdout, "couldn't unmarshal %v to geojson: %v\n", t, e)
 				}
 				return
 			}
+
+			fmt.Fprintln(os.Stdout, "Found type:", t)
 			switch t {
 			case "Point":
 				var p gj.Point
@@ -131,6 +132,24 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 				}
 
 				geo = gc
+				foundGeojson = true
+				break
+			case "Feature":
+				var f gj.Feature
+				if err = unmarshal(b, &f); err != nil {
+					break
+				}
+
+				geo = f
+				foundGeojson = true
+				break
+			case "FeatureCollection":
+				var fc gj.FeatureCollection
+				if err = unmarshal(b, &fc); err != nil {
+					break
+				}
+
+				geo = fc
 				foundGeojson = true
 				break
 			default:

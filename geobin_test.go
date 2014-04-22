@@ -6,6 +6,8 @@ import "strings"
 
 var r *strings.Replacer = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
+// TODO: There's definitely a better way to do this. Comparing the resulting strings is
+// pretty damned error prone.
 func runTest(js string, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
 	test.Expect(t, gr.Geo, r.Replace(js))
@@ -76,21 +78,48 @@ func TestRequestWithGJGeometryCollection(t *testing.T) {
 }
 
 func TestRequestWithGJFeature(t *testing.T) {
-	// TODO:
+	js := `{
+		"type": "Feature",
+		"id": "feature-test",
+		"geometry": {
+			"coordinates": [-122.65, 45.51],
+			"type": "Point"
+		},
+		"properties": {
+			"foo": "bar"
+		}
+	}`
+	runTest(js, t)
 }
 
 func TestRequestWithGJFeatureCollection(t *testing.T) {
+	js := `{
+		"type": "FeatureCollection",
+		"features": [
+			{
+				"type": "Feature",
+				"id": "feature-test",
+				"geometry": {
+					"coordinates": [-122.65, 45.51],
+					"type": "Point"
+				},
+				"properties": {
+					"foo": "bar"
+				}
+			}
+		]
+	}`
+	runTest(js, t)
+}
+
+func TestRequestWithNonGJPoint(t *testing.T) {
 	// TODO:
 }
 
-func TestRequestWithNoGJPoint(t *testing.T) {
+func TestRequestWithNonGJPoints(t *testing.T) {
 	// TODO:
 }
 
-func TestRequestWithNoGJPoints(t *testing.T) {
-	// TODO:
-}
-
-func TestRequestwithNoGJPointAndRadius(t *testing.T) {
+func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 	// TODO:
 }
