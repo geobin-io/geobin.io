@@ -9,16 +9,16 @@
     $scope.host = window.location.host;
     $scope.pathname = window.location.pathname.substr(1);
     $scope.bins = bin.store.session.history;
+    $scope.create = bin.api.create;
 
     $scope.$on('$locationChangeSuccess', function (event, args) {
       $scope.pathname = window.location.pathname.substr(1);
     });
-
-    $scope.create = bin.api.create;
   }])
 
   // Home controller
   .controller('HomeCtrl', ['$scope', 'bin', function ($scope, bin) {
+    document.title = 'Geobin';
     $scope.create = bin.api.create;
     $scope.bins = bin.store.session.history;
     $scope.enabled = bin.store.enabled;
@@ -27,7 +27,7 @@
   // Bin controller
   .controller('BinCtrl', ['$scope', '$routeParams', 'bin', function ($scope, $routeParams, bin) {
     var binId = $scope.binId = $routeParams.binId;
-
+    document.title = 'Geobin | ' + binId;
     $scope.host = window.location.host;
 
     // expose a method for handling clicks

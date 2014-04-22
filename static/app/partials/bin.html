@@ -1,9 +1,35 @@
 <div class="container-fluid">
   <div class="sidebar">
-    <ul class="list-group">
-      <li class="list-group-item" ng-repeat="item in history track by $index">{{item}}</li>
-      <li class="list-group-item" ng-if="!history.length" role="presentation" class="dropdown-header">No requests received yet.</li>
-    </ul>
+    <div class="panel panel-primary request-toggle"
+      ng-init="open = false"
+      ng-repeat="item in history track by $index"
+      ng-class="{open: open}">
+      <div class="panel-heading"
+        ng-click="open = !open"
+        ng-class="{open: open}">
+        {{item.timestamp | prettyDate}}
+        <span ng-if="typeof item.geo === 'array'" class="badge badge-danger pull-right">
+          {{item.geo | length}}
+        </span>
+      </div>
+
+      <ul class="list-group" ng-show="open">
+        <div ng-repeat="(k, v) in item.headers" class="list-group-item">
+          {{k}}: {{v}}
+        </div>
+      </ul>
+
+      <ul class="list-group" ng-show="open">
+        <li class="list-group-item">
+          <p>body</p>
+          <pre>{{item.body | jsonStringify}}</pre>
+        </li>
+        <li ng-if="item.geo" class="list-group-item">
+          <p>geo</p>
+          <pre>{{item.geo | jsonStringify}}</pre>
+        </li>
+      </ul>
+    </div>
   </div>
   <div class="bin-map">
     <bin-map id="map" center="45.521699,-122.677386" zoom="10" onclick="click"></bin-map>
