@@ -1,6 +1,11 @@
-<div class="container">
-  <ul class="list-group">
-    <li class="list-group-item" ng-repeat="item in history track by $index">{{item}}</li>
-    <li class="list-group-item" ng-show="!history.length" role="presentation" class="dropdown-header">No history yet. Try posting to <code>http://{{host}}/{{binId}}</code></li>
-  </ul>
+<div class="container-fluid">
+  <div class="sidebar">
+    <ul class="list-group">
+      <li class="list-group-item" ng-repeat="item in history track by $index">{{item}}</li>
+      <li class="list-group-item" ng-if="!history.length" role="presentation" class="dropdown-header">No requests received yet.</li>
+    </ul>
+  </div>
+  <div class="bin-map">
+    <bin-map id="map" center="45.521699,-122.677386" zoom="10" onclick="click"></bin-map>
+  </div>
 </div>

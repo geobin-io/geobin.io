@@ -14,6 +14,8 @@
     "fontawesome": "~4.0.3",
     "angular-loading-bar": "~0.3.0",
     "tinystore": "~0.0.4",
-    "Bootflat": "~2.0.1"
+    "Bootflat": "~2.0.1",
+    "esri-leaflet": "~0.0.1-beta.4-patch-1",
+    "leaflet-dist": "~0.7.2"
   }
 }
