@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	gtjson "github.com/Esri/geotrigger-go/geotrigger/json"
 	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
 	"github.com/gorilla/mux"
+	gj "github.com/kpawlik/geojson"
 	gu "github.com/nu7hatch/gouuid"
 	redis "github.com/vmihailenco/redis/v2"
 	"io/ioutil"
@@ -13,7 +15,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -37,6 +41,165 @@ type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
+	Geo       string            `json:"geo,omitempty"`
+}
+
+func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
+	gr := GeobinRequest{
+		Timestamp: ts,
+		Headers:   h,
+		Body:      string(b),
+	}
+
+	// TODO: MAGIC... Currently this just looks for something in the body that looks
+	// like a lat and a long, grabs the first of each and makes a Point in Geojson.
+	// What this will need to *actually* do is first detect if we received geojson in
+	// the body and just pass it right along to gr.Geo. If the body does not contain
+	// geojson then we need to search for lat/long similar to how this is doing it
+	// but if there's more than one we need to figure out what to do then. Multiple
+	// points? Lines? Polys? I dunno...
+
+	js, foundGeojson := gr.parseGeojson()
+	_ = js
+
+	// If we didn't find any geojson search for any coordinates in the body.
+	if !foundGeojson {
+		// TODO: Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
+		// placing any additional data near those keys in the properties key.
+		// The code below is just my initial lat/long detection code: needs improvement
+		latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
+		lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+
+		var lat, lng float64
+		var foundLat, foundLng bool
+		bStr := string(b)
+		if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
+			lat, _ = strconv.ParseFloat(latMatches[1], 64)
+			foundLat = true
+		}
+
+		if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
+			lng, _ = strconv.ParseFloat(lngMatches[1], 64)
+			foundLng = true
+		}
+
+		if foundLat && foundLng {
+			p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
+			gr.Geo, _ = gj.Marshal(p)
+		}
+	}
+
+	if gr.Geo != "" {
+		fmt.Fprintln(os.Stdout, "Found geo:", gr.Geo)
+	} else {
+		fmt.Fprintln(os.Stdout, "No geo found in request:", gr.Body)
+	}
+	return &gr
+}
+
+func (gr *GeobinRequest) parseGeojson() (js map[string]interface{}, foundGeojson bool) {
+	var t string
+	var geo interface{}
+	b := []byte(gr.Body)
+
+	if err := json.Unmarshal(b, &js); err != nil {
+		fmt.Fprintln(os.Stdout, "error unmarshalling json:", err)
+	} else {
+		fmt.Fprintln(os.Stdout, "Json unmarshalled:", js)
+		if err := gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
+			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
+		} else {
+			unmarshal := func(buf []byte, target interface{}) (e error) {
+				if e = json.Unmarshal(buf, target); e != nil {
+					fmt.Fprintf(os.Stdout, "couldn't unmarshal %v to geojson: %v\n", t, e)
+				}
+				return
+			}
+
+			fmt.Fprintln(os.Stdout, "Found type:", t)
+			switch t {
+			case "Point":
+				var p gj.Point
+				if err = unmarshal(b, &p); err != nil {
+					break
+				}
+
+				geo = p
+				foundGeojson = true
+				break
+			case "LineString":
+				var ls gj.LineString
+				if err = unmarshal(b, &ls); err != nil {
+					break
+				}
+
+				geo = ls
+				foundGeojson = true
+				break
+			case "Polygon":
+				var p gj.Polygon
+				if err = unmarshal(b, &p); err != nil {
+					break
+				}
+
+				geo = p
+				foundGeojson = true
+				break
+			case "MultiPoint":
+				var mp gj.MultiPoint
+				if err = unmarshal(b, &mp); err != nil {
+					break
+				}
+
+				geo = mp
+				foundGeojson = true
+				break
+			case "MultiPolygon":
+				var mp gj.MultiPolygon
+				if err = unmarshal(b, &mp); err != nil {
+					break
+				}
+
+				geo = mp
+				foundGeojson = true
+				break
+			case "GeometryCollection":
+				var gc gj.GeometryCollection
+				if err = unmarshal(b, &gc); err != nil {
+					break
+				}
+
+				geo = gc
+				foundGeojson = true
+				break
+			case "Feature":
+				var f gj.Feature
+				if err = unmarshal(b, &f); err != nil {
+					break
+				}
+
+				geo = f
+				foundGeojson = true
+				break
+			case "FeatureCollection":
+				var fc gj.FeatureCollection
+				if err = unmarshal(b, &fc); err != nil {
+					break
+				}
+
+				geo = fc
+				foundGeojson = true
+				break
+			default:
+				fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
+				break
+			}
+		}
+	}
+	if foundGeojson {
+		gr.Geo, _ = gj.Marshal(geo)
+	}
+	return js, foundGeojson
 }
 
 func main() {
@@ -122,7 +285,7 @@ func createRouter() *mux.Router {
 	web.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(os.Stdout, "static - %v\n", req.URL)
 		http.ServeFile(w, req, req.URL.Path[1:])
-	})	
+	})
 	// All other GET requests will serve up the Angular app at static/index.html
 	web.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(os.Stdout, "web - %v\n", req.URL)
@@ -136,6 +299,8 @@ func createRouter() *mux.Router {
  */
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
+
+	// Get a new name
 	n, err := randomString(config.NameLength)
 	if err != nil {
 		log.Println("Failure to create new name:", n, err)
@@ -143,13 +308,15 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save to redis
 	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
 
-	d := 48*time.Hour
+	// Set expiration
+	d := 48 * time.Hour
 	if res := client.Expire(n, d); res.Err() != nil {
 		log.Println("Failure to set EXPIRE for", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
@@ -157,20 +324,18 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	exp := time.Now().Add(d).Unix()
 
-	bin := map[string]interface{} {
-		"id": n,
+	// Create the json response and encoder
+	encoder := json.NewEncoder(w)
+	bin := map[string]interface{}{
+		"id":      n,
 		"expires": exp,
 	}
-	binJson, err := json.Marshal(bin)
+
+	// encode the json directly to the response writer
+	err = encoder.Encode(bin)
 	if err != nil {
 		log.Println("Failure to create json for new name:", n, err)
-		// I know this error message is ridiculous, but I don't know how this would ever happen so...
-		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not make a JSON object for it!", n), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(binJson); err != nil {
-		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we failed to write to the response!", n), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not return the JSON for it!", n), http.StatusInternalServerError)
 		return
 	}
 }
@@ -203,11 +368,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 		headers[k] = strings.Join(v, ", ")
 	}
 
-	gr := GeobinRequest{
-		Timestamp: time.Now().UTC().Unix(),
-		Headers:   headers,
-		Body:      string(body),
-	}
+	gr := NewGeobinRequest(time.Now().UTC().Unix(), headers, body)
 
 	encoded, err := json.Marshal(gr)
 	if err != nil {
@@ -224,7 +385,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func historyHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "history - %v", r.URL)
+	fmt.Fprintf(os.Stdout, "history - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
 	if err != nil {
@@ -254,18 +415,17 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		history = append(history, gr)
 	}
 
-	resp, err := json.Marshal(history)
+	encoder := json.NewEncoder(w)
+	err = encoder.Encode(history)
 	if err != nil {
 		log.Println("Error marshalling request history:", err)
 		http.Error(w, "Could not generate history.", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprint(w, string(resp))
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "create - %v", r.URL)
+	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
 
