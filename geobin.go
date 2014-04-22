@@ -59,16 +59,53 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 	// but if there's more than one we need to figure out what to do then. Multiple
 	// points? Lines? Polys? I dunno...
 
-	var foundGeojson bool
-	var geo interface{}
+	js, foundGeojson := gr.parseGeojson()
+	_ = js
 
+	// If we didn't find any geojson search for any coordinates in the body.
+	if !foundGeojson {
+		//	Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
+		//		placing any additional data near those keys in the properties key.
+		latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
+		lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+
+		var lat, lng float64
+		var foundLat, foundLng bool
+		bStr := string(b)
+		if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
+			lat, _ = strconv.ParseFloat(latMatches[1], 64)
+				foundLat = true
+		}
+
+		if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
+			lng, _ = strconv.ParseFloat(lngMatches[1], 64)
+			foundLng = true
+		}
+
+		if foundLat && foundLng {
+			p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
+			gr.Geo, _ = gj.Marshal(p)
+		}
+	}
+
+	if gr.Geo != "" {
+		fmt.Fprintln(os.Stdout, "Found geo:", gr.Geo)
+	} else {
+		fmt.Fprintln(os.Stdout, "No geo found in request:", gr.Body)
+	}
+	return &gr
+}
+
+func (gr *GeobinRequest)parseGeojson() (js map[string]interface{}, foundGeojson bool) {
 	var t string
-	var js map[string]interface{}
+	var geo interface{}
+	b := []byte(gr.Body)
+
 	if err := json.Unmarshal(b, &js); err != nil {
 		fmt.Fprintln(os.Stdout, "error unmarshalling json:", err)
 	} else {
 		fmt.Fprintln(os.Stdout, "Json unmarshalled:", js)
-		if err = gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
+		if err := gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
 			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
 		} else {
 			unmarshal := func(buf []byte, target interface{}) (e error) {
@@ -158,37 +195,10 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 			}
 		}
 	}
-
-	// If we didn't find any geojson search for any coordinates in the body.
-	if !foundGeojson {
-		//	Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
-		//		placing any additional data near those keys in the properties key.
-		latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
-		lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
-
-		var lat, lng float64
-		var foundLat, foundLng bool
-		bStr := string(b)
-		if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
-			lat, _ = strconv.ParseFloat(latMatches[1], 64)
-				foundLat = true
-		}
-
-		if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
-			lng, _ = strconv.ParseFloat(lngMatches[1], 64)
-			foundLng = true
-		}
-
-		if foundLat && foundLng {
-			geo = gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
-		}
-	}
-
-	if geo != nil {
-		fmt.Fprintln(os.Stdout, "Found geo:", geo)
+	if foundGeojson {
 		gr.Geo, _ = gj.Marshal(geo)
 	}
-	return &gr
+	return js, foundGeojson
 }
 
 func main() {
