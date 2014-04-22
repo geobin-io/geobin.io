@@ -46,32 +46,39 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	count := 1000
 	interval := 100 * time.Microsecond
 
+	var readCount uint64 = 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sck, err := NewSocket("test_socket", w, r, nil, nil)
+		sck, err := NewSocket("test_socket", w, r, func(messageType int, message []byte) {
+			atomic.AddUint64(&readCount, 1)
+			test.Expect(t, string(message), "You got a message!")
+		}, nil)
+
 		if err != nil {
 			t.Error("Error creating websocket:", err)
 		}
 
-		go func(s S) {
-			ticker := time.NewTicker(interval)
-			defer ticker.Stop()
-			for i := 0; i < count; i++ {
-				<-ticker.C
-				s.Write([]byte("You got a message!"))
-			}
-		}(sck)
+		go writeLotsaMessages(sck, count, interval)
 	}))
 	defer ts.Close()
 
 	var msgCount uint64 = 0
-	makeClient(t, ts.URL, "test_client", func(messageType int, message []byte) {
+	client := makeClient(t, ts.URL, "test_client", func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
 	}, nil)
 
-	micros := float64(count) * 1.2
-	time.Sleep(time.Duration(micros) * interval)
+	// a sleep duration ~20% longer than the time needed to write all the messages
+	micros := time.Duration(float64(count) * 1.2) * interval
+
+	// sleep a bit to let the messages be sent
+	time.Sleep(micros)
 	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(count))
+
+	go writeLotsaMessages(client, count, interval)
+
+	// sleep a bit to let the messages be sent
+	time.Sleep(micros)
+	test.Expect(t, atomic.LoadUint64(&readCount), uint64(count))
 }
 
 func TestOnClose(t *testing.T) {
@@ -130,4 +137,13 @@ func roundTrip(t *testing.T, ts *httptest.Server, clientName string) {
 	// sleep a lil bit to allow the server to write back to the websocket
 	time.Sleep(25 * time.Millisecond)
 	test.Expect(t, atomic.LoadUint64(&msgCount), uint64(1))
+}
+
+func writeLotsaMessages(sck S, count int, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for i := 0; i < count; i++ {
+		<-ticker.C
+		sck.Write([]byte("You got a message!"))
+	}
 }
