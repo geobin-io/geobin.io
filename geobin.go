@@ -38,10 +38,10 @@ var pubsub = &redis.PubSub{}
 var socketManager = manager.NewManager(make(map[string]map[string]socket.S))
 
 type GeobinRequest struct {
-	Timestamp int64             `json:"timestamp"`
-	Headers   map[string]string `json:"headers"`
-	Body      string            `json:"body"`
-	Geo       string            `json:"geo,omitempty"`
+	Timestamp int64                  `json:"timestamp"`
+	Headers   map[string]string      `json:"headers"`
+	Body      string                 `json:"body"`
+	Geo       map[string]interface{} `json:"geo,omitempty"`
 }
 
 func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
@@ -51,15 +51,8 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
 		Body:      string(b),
 	}
 
-	// TODO: MAGIC... Currently this just looks for something in the body that looks
-	// like a lat and a long, grabs the first of each and makes a Point in Geojson.
-	// What this will need to *actually* do is first detect if we received geojson in
-	// the body and just pass it right along to gr.Geo. If the body does not contain
-	// geojson then we need to search for lat/long similar to how this is doing it
-	// but if there's more than one we need to figure out what to do then. Multiple
-	// points? Lines? Polys? I dunno...
-
 	js, foundGeojson := gr.parseGeojson()
+	// TODO: use js in the !foundGeojson block below (it is the raw json found in the body, if any)
 	_ = js
 
 	// If we didn't find any geojson search for any coordinates in the body.
@@ -85,11 +78,12 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
 
 		if foundLat && foundLng {
 			p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
-			gr.Geo, _ = gj.Marshal(p)
+			pstr, _ := gj.Marshal(p)
+			json.Unmarshal([]byte(pstr), &gr.Geo)
 		}
 	}
 
-	if gr.Geo != "" {
+	if gr.Geo != nil {
 		fmt.Fprintln(os.Stdout, "Found geo:", gr.Geo)
 	} else {
 		fmt.Fprintln(os.Stdout, "No geo found in request:", gr.Body)
@@ -197,7 +191,8 @@ func (gr *GeobinRequest) parseGeojson() (js map[string]interface{}, foundGeojson
 		}
 	}
 	if foundGeojson {
-		gr.Geo, _ = gj.Marshal(geo)
+		gjs, _ := gj.Marshal(geo)
+		json.Unmarshal([]byte(gjs), &gr.Geo)
 	}
 	return js, foundGeojson
 }

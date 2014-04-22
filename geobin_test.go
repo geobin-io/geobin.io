@@ -1,16 +1,23 @@
 package main
 
 import "testing"
-import "github.com/geoloqi/geobin-go/test"
+import "encoding/json"
 import "strings"
+import "reflect"
 
 var r *strings.Replacer = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
-// TODO: There's definitely a better way to do this. Comparing the resulting strings is
-// pretty damned error prone.
 func runTest(js string, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
-	test.Expect(t, gr.Geo, r.Replace(js))
+	var jsMap map[string]interface{}
+	if err := json.Unmarshal([]byte(js), &jsMap); err != nil {
+		t.Error(err)
+		return
+	}
+	if !reflect.DeepEqual(jsMap, gr.Geo) {
+		t.Errorf("Expected %v, (type %v) - Got %v (type %v)", jsMap, reflect.TypeOf(jsMap), gr.Geo, reflect.TypeOf(gr.Geo))
+		return
+	}
 }
 
 func TestRequestWithGJPoint(t *testing.T) {
