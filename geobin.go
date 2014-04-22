@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	gtjson "github.com/Esri/geotrigger-go/geotrigger/json"
 	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
-	gtjson "github.com/Esri/geotrigger-go/geotrigger/json"
 	"github.com/gorilla/mux"
 	gj "github.com/kpawlik/geojson"
 	gu "github.com/nu7hatch/gouuid"
@@ -44,11 +44,11 @@ type GeobinRequest struct {
 	Geo       string            `json:"geo,omitempty"`
 }
 
-func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) {
+func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
 	gr := GeobinRequest{
 		Timestamp: ts,
-		Headers: h,
-		Body: string(b),
+		Headers:   h,
+		Body:      string(b),
 	}
 
 	// TODO: MAGIC... Currently this just looks for something in the body that looks
@@ -64,8 +64,9 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 
 	// If we didn't find any geojson search for any coordinates in the body.
 	if !foundGeojson {
-		//	Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
-		//		placing any additional data near those keys in the properties key.
+		// TODO: Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
+		// placing any additional data near those keys in the properties key.
+		// The code below is just my initial lat/long detection code: needs improvement
 		latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
 		lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
 
@@ -74,7 +75,7 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 		bStr := string(b)
 		if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
 			lat, _ = strconv.ParseFloat(latMatches[1], 64)
-				foundLat = true
+			foundLat = true
 		}
 
 		if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
@@ -96,7 +97,7 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) 
 	return &gr
 }
 
-func (gr *GeobinRequest)parseGeojson() (js map[string]interface{}, foundGeojson bool) {
+func (gr *GeobinRequest) parseGeojson() (js map[string]interface{}, foundGeojson bool) {
 	var t string
 	var geo interface{}
 	b := []byte(gr.Body)

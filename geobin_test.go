@@ -74,7 +74,7 @@ func TestRequestWithGJGeometryCollection(t *testing.T) {
 			}
     ]
   }`
-  runTest(js, t)
+	runTest(js, t)
 }
 
 func TestRequestWithGJFeature(t *testing.T) {
