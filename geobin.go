@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
+	gtjson "github.com/Esri/geotrigger-go/geotrigger/json"
 	"github.com/gorilla/mux"
 	gj "github.com/kpawlik/geojson"
 	gu "github.com/nu7hatch/gouuid"
@@ -40,37 +41,106 @@ type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
-	Geo       string            `json: "geo,omitempty"`
+	Geo       string            `json:"geo,omitempty"`
 }
 
-func (gr *GeobinRequest) ParseForGeo() {
+func NewGeobinRequest(ts int64, h map[string]string, b []byte) (*GeobinRequest) {
+	gr := GeobinRequest{
+		Timestamp: ts,
+		Headers: h,
+		Body: string(b),
+	}
+
 	// TODO: MAGIC... Currently this just looks for something in the body that looks
 	// like a lat and a long, grabs the first of each and makes a Point in Geojson.
 	// What this will need to *actually* do is first detect if we received geojson in
-	// the body and just pass it right along to gr.Geo. If the body does not contain 
+	// the body and just pass it right along to gr.Geo. If the body does not contain
 	// geojson then we need to search for lat/long similar to how this is doing it
 	// but if there's more than one we need to figure out what to do then. Multiple
 	// points? Lines? Polys? I dunno...
 
-	latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
-	lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+	var foundGeojson bool
+	var geo interface{}
 
-	var lat, lng float64
-	var foundLat, foundLng bool
-	if latMatches := latRegex.FindStringSubmatch(gr.Body); latMatches != nil {
-		lat, _ = strconv.ParseFloat(latMatches[1], 64)
-		foundLat = true
+	var t string
+	var js map[string]interface{}
+	if err := json.Unmarshal(b, &js); err != nil {
+		fmt.Fprintln(os.Stdout, "error unmarshalling json:", err)
+	} else {
+		fmt.Fprintln(os.Stdout, "Json unmarshalled:", js)
+		if err = gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
+			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
+		} else {
+			fmt.Fprintln(os.Stdout, "Found type:", t)
+			switch t {
+			case "Point":
+				var c []interface{}
+				if err = gtjson.GetValueFromJSONObject(js, "coordinates", &c); err != nil {
+					fmt.Fprintln(os.Stdout, "Get value from json for Point failed:", err)
+					break
+				}
+
+				geo = gj.NewPoint(gj.Coordinate{gj.CoordType(c[0].(float64)), gj.CoordType(c[1].(float64))})
+				fmt.Fprintln(os.Stdout, "Found geo:", geo)
+				foundGeojson = true
+				break
+			case "LineString":
+				var coords []interface{}
+				if err = gtjson.GetValueFromJSONObject(js, "coordinates", &coords); err != nil {
+					fmt.Fprintln(os.Stdout, "Get value from json for LineString failed:", err)
+					break
+				}
+
+				cs := make(gj.Coordinates, 0)
+				for i, c := range(coords) {
+					var x, y float64
+					ca := c.([]interface{})
+					xerr := gtjson.GetValueFromJSONArray(ca, 0, &x)
+					yerr := gtjson.GetValueFromJSONArray(ca, 1, &y)
+					if xerr != nil || yerr != nil {
+						fmt.Fprintln(os.Stdout, "Get value from json array for LineString failed:", i, xerr, yerr)
+						break
+					}
+					cs = append(cs, gj.Coordinate{gj.CoordType(x), gj.CoordType(y)})
+				}
+				geo = gj.NewLineString(cs)
+				fmt.Fprintln(os.Stdout, "Found geo:", geo)
+				foundGeojson = true
+				break
+			default:
+				fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
+				break
+			}
+		}
 	}
 
-	if lngMatches := lngRegex.FindStringSubmatch(gr.Body); lngMatches != nil {
-		lng, _ = strconv.ParseFloat(lngMatches[1], 64)
-		foundLng = true
+	// If we didn't find any geojson search for any coordinates in the body.
+	if !foundGeojson {
+		//	Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
+		//		placing any additional data near those keys in the properties key.
+		latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
+		lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+
+		var lat, lng float64
+		var foundLat, foundLng bool
+		bStr := string(b)
+		if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
+			lat, _ = strconv.ParseFloat(latMatches[1], 64)
+				foundLat = true
+		}
+
+		if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
+			lng, _ = strconv.ParseFloat(lngMatches[1], 64)
+			foundLng = true
+		}
+
+		if foundLat && foundLng {
+			geo = gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
+		}
 	}
 
-	if foundLat && foundLng {
-		p := gj.NewPoint(gj.Coordinate{gj.CoordType(lat), gj.CoordType(lng)})
-		gr.Geo, _ = gj.Marshal(p)
-	}
+	gr.Geo, _ = gj.Marshal(geo)
+	return &gr
 }
 
 func main() {
@@ -239,12 +309,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 		headers[k] = strings.Join(v, ", ")
 	}
 
-	gr := GeobinRequest{
-		Timestamp: time.Now().UTC().Unix(),
-		Headers:   headers,
-		Body:      string(body),
-	}
-	gr.ParseForGeo()
+	gr := NewGeobinRequest(time.Now().UTC().Unix(), headers, body)
 
 	encoded, err := json.Marshal(gr)
 	if err != nil {
@@ -261,7 +326,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func historyHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "history - %v", r.URL)
+	fmt.Fprintf(os.Stdout, "history - %v\n", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
 	if err != nil {
@@ -301,7 +366,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "create - %v", r.URL)
+	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
 
