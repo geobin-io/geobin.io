@@ -21,6 +21,7 @@ body {
   position: absolute;
   bottom: 0;
   width: 100%;
+  z-index: 1001;
   /* Set the fixed height of the footer here */
   height: 40px;
   background-color: #222;
@@ -73,7 +74,18 @@ body {
   margin-right: 12px;
 }
 
-/* Topic
+.btn-create {
+  color: #E6E9ED;
+  background: #434A54;
+  border-color: #434A54;
+}
+.btn-create:hover {
+  color: #fff;
+  background: #765ABC;
+  border-color: #765ABC;
+}
+
+/* Home
 -------------------------------------------------- */
 .topic {
   background: #4A89DC;
@@ -99,14 +111,52 @@ body {
   overflow-x: hidden;
   overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
   background-color: #434A54;
-  width: 260px;
+  width: 360px;
 }
 
 .sidebar .list-group-item {
   background: #656D78;
   color: #fff;
-  /*border-top-right-radius: 0;
-  border-bottom-right-radius: 0;*/
+  border-color: #434A54;
+}
+
+.sidebar .panel .list-group-item:first-child {
+  border-top: none;
+}
+
+.sidebar .panel-primary>.panel-heading {
+  border-color: #434A54;
+}
+
+.sidebar pre {
+  word-wrap: normal;
+  background: #434A54;
+  border-color: #656D78;
+  color: #F5F7FA;
+}
+
+.request-toggle {
+  margin-bottom: 0;
+}
+.request-toggle .panel-heading {
+  border-radius: 0;
+}
+.request-toggle:first-child .panel-heading {
+  border-radius: 4px 4px 0 0;
+}
+.request-toggle:last-child .panel-heading:not(.open) {
+  border-radius: 0 0 4px 4px;
+}
+.request-toggle.open.panel:not(:last-child)>.list-group:last-child .list-group-item:last-child {
+  margin-bottom: 1px;
+  border-radius: 0;
+}
+.request-toggle .panel-heading {
+  cursor: pointer;
+  user-select: none;
+}
+.request-toggle .panel-heading:hover {
+  background: #4FC1E9;
 }
 
 /* map */
@@ -120,7 +170,7 @@ body {
   top: 51px;
   right: 0;
   bottom: 40px;
-  left: 260px;
+  left: 360px;
   z-index: 1000;
 }
 

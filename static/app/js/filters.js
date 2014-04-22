@@ -33,6 +33,43 @@
       // default to seconds
       return diff + 'seconds';
     };
+  }])
+
+  // prettyDate
+  // ----------
+
+  .filter('prettyDate', [function () {
+    return function (ts) {
+      return new Date(ts * 1000).toLocaleString();
+    };
+  }])
+
+  // objLength
+  // ----------
+
+  .filter('length', [function () {
+    return function (obj) {
+      if (typeof obj === 'array') {
+        return obj.length;
+      }
+      return '';
+    };
+  }])
+
+  // jsonStringify
+  // ----------
+
+  .filter('jsonStringify', [function () {
+    return function (str) {
+      var ret = str;
+      try {
+        var ret = JSON.parse(ret);
+      } catch (e) {}
+      try {
+        var ret = JSON.stringify(ret, null, 2);
+      } catch (e) {}
+      return ret;
+    };
   }]);
 
 })();
