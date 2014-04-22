@@ -11,7 +11,7 @@
     'chieffancypants.loadingBar'
   ])
 
-  .config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
+  .config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
     $locationProvider.html5Mode(true);
 
     $routeProvider

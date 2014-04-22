@@ -21,8 +21,12 @@
     </div>
     <div class="col-md-5">
       <div class="panel panel-primary">
-        <div class="panel-heading"><i class="fa fa-clock-o"></i> History</div>
-        <table class="table">
+        <div class="panel-heading"><i class="fa fa-clock-o"></i> Your History</div>
+        <div ng-hide="bins.length" class="panel-body">
+          <p ng-show="enabled">When you create a new geobin, it will show up in this list until it expires as long as you're using the same browser on your next visit. If you need to access a geobin on another browser or computer, or send it to a friend, just copy the link!</p>
+          <p ng-hide="enabled">Oh no! It looks like your browser doesn't support localStorage. To get the most out of this service, please consider using the latest version of a <a href="http://whatbrowser.org/">modern browser</a> like Chrome or Firefox.</p>
+        </div>
+        <table ng-show="bins.length" class="table">
           <thead>
             <tr>
               <th>Geobin ID</th>
