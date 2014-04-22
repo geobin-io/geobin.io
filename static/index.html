@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/static/app/components/Bootflat/bootflat/css/bootflat.min.css">
   <link rel="stylesheet" href="/static/app/components/fontawesome/css/font-awesome.min.css">
   <link rel="stylesheet" href="/static/app/components/angular-loading-bar/build/loading-bar.min.css">
+  <link rel="stylesheet" href="/static/app/components/leaflet-dist/leaflet.css">
   <link rel="stylesheet" href="/static/app/css/app.css">
 </head>
 <body>
@@ -23,7 +24,7 @@
       </button>
 
       <p class="navbar-brand" ng-cloak>
-        <a class="brand" href="/">{{host}}</a><span ng-if="pathname">/<a href="/{{pathname}}">{{pathname}}</a></span>
+        <a ng-class="{active: !pathname}" href="/">{{host}}</a><span ng-if="pathname">/<a href="/{{pathname}}" ng-class="{active: pathname}">{{pathname}}</a></span>
       </p>
 
       <div class="navbar-text loading" ng-cloak>
@@ -35,9 +36,9 @@
       <div class="navbar-right" ng-cloak>
         <ul class="nav navbar-nav">
           <li class="dropdown">
-            <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-clock-o"></i> History <b class="caret"></b></a>
+            <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-clock-o"></i> Your History <b class="caret"></b></a>
             <ul class="dropdown-menu dropdown-history">
-              <li ng-repeat="item in bins track by $index">
+              <li ng-repeat="item in bins track by $index" ng-class="{disabled: item.id === pathname}">
                 <a href="/{{item.id}}" class="clearfix">
                   {{item.id}}
                   <small class="text-muted expires">{{item.expires | timeRemaining}} left</small>
@@ -60,14 +61,15 @@
 
 <footer class="footer">
   <div class="container-fluid">
-    <p class="text-muted pull-left" ng-cloak>Geobin v<span app-version></span></p>
-    <p class="text-muted pull-right">Fork this project on <a href="http://github.com/geoloqi/geobin-go">Github</a></p>
+    <p class="text-muted pull-left" ng-cloak>Geobin &#149; App v<span app-version></span> &#149; API v<span api-version></span></p>
+    <p class="text-muted pull-right"><a href="http://github.com/geoloqi/geobin-go">Fork this project on Github</a></p>
   </div>
 </footer>
 
 <script src="/static/app/components/jquery/dist/jquery.min.js"></script>
 <script src="/static/app/components/tinystore/tinystore.min.js"></script>
-<script src="/static/app/components/humanize/humanize.js"></script>
+<script src="/static/app/components/leaflet-dist/leaflet.js"></script>
+<script src="/static/app/components/esri-leaflet/dist/esri-leaflet.js"></script>
 <script>
 // include angular loader, which allows the files to load in any order
 //@@NG_LOADER_START@@
