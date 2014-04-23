@@ -38,21 +38,21 @@ func TestConcurrentAccess(t *testing.T) {
 
 	var w sync.WaitGroup
 	w.Add(2)
-	// lotsa writes
-	go func() {
-		for i := 0; i < 100; i++ {
+	// lotsa reads
+	go func(){
+		for i := 0; i < 100000; i++ {
 			manageMap(t, mgr, func(mp map[string]interface{}) {
-				mp["test_key"] = i
+				_ = mp["test_key"]
 			})
 		}
 		w.Done()
 	}()
 
-	// lotsa reads
-	go func(){
-		for i := 0; i < 100; i++ {
+	// lotsa writes
+	go func() {
+		for i := 0; i < 100000; i++ {
 			manageMap(t, mgr, func(mp map[string]interface{}) {
-				_ = mp["test_key"]
+				mp["test_key"] = i
 			})
 		}
 		w.Done()
@@ -64,7 +64,7 @@ func TestConcurrentAccess(t *testing.T) {
 			val = mp["test_key"]
 	})
 
-	test.Expect(t, val, 99)
+	test.Expect(t, val, 99999)
 }
 
 func manageMap(t *testing.T, mgr Manager, f func(myMap map[string]interface{})) {
