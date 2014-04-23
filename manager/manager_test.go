@@ -19,21 +19,13 @@ func TestBasicAccess(t *testing.T) {
 	obj := make(map[string]interface{})
 	mgr := NewManager(obj)
 
-	mgr.Touch(func(o interface{}) {
-		if obj, ok := o.(map[string]interface{}); ok {
-			obj["test_key"] = "test_val"
-		} else {
-			t.Error("Managed object could not be asserted back to original type.")
-		}
+	manageMap(t, mgr, func(mp map[string]interface{}) {
+		mp["test_key"] = "test_val"
 	})
 
 	var val interface{}
-	mgr.Touch(func(o interface{}) {
-		if obj, ok := o.(map[string]interface{}); ok {
-			val = obj["test_key"]
-		} else {
-			t.Error("Managed object could not be asserted back to original type.")
-		}
+	manageMap(t, mgr, func(mp map[string]interface{}) {
+		val = mp["test_key"]
 	})
 
 	test.Expect(t, val, "test_val")
@@ -49,12 +41,8 @@ func TestConcurrentAccess(t *testing.T) {
 	// lotsa writes
 	go func() {
 		for i := 0; i < 100; i++ {
-			mgr.Touch(func(o interface{}) {
-				if obj, ok := o.(map[string]interface{}); ok {
-					obj["test_key"] = i
-				} else {
-					t.Error("Managed object could not be asserted back to original type.")
-				}
+			manageMap(t, mgr, func(mp map[string]interface{}) {
+				mp["test_key"] = i
 			})
 		}
 		w.Done()
@@ -63,12 +51,8 @@ func TestConcurrentAccess(t *testing.T) {
 	// lotsa reads
 	go func(){
 		for i := 0; i < 100; i++ {
-			mgr.Touch(func(o interface{}) {
-				if obj, ok := o.(map[string]interface{}); ok {
-					_ = obj["test_key"]
-				} else {
-					t.Error("Managed object could not be asserted back to original type.")
-				}
+			manageMap(t, mgr, func(mp map[string]interface{}) {
+				_ = mp["test_key"]
 			})
 		}
 		w.Done()
@@ -76,13 +60,19 @@ func TestConcurrentAccess(t *testing.T) {
 	w.Wait()
 
 	var val interface{}
+	manageMap(t, mgr, func(mp map[string]interface{}) {
+			val = mp["test_key"]
+	})
+
+	test.Expect(t, val, 99)
+}
+
+func manageMap(t *testing.T, mgr Manager, f func(myMap map[string]interface{})) {
 	mgr.Touch(func(o interface{}) {
 		if obj, ok := o.(map[string]interface{}); ok {
-			val = obj["test_key"]
+			f(obj)
 		} else {
 			t.Error("Managed object could not be asserted back to original type.")
 		}
 	})
-
-	test.Expect(t, val, 99)
 }
