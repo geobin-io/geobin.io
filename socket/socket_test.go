@@ -96,7 +96,7 @@ func TestOnClose(t *testing.T) {
 	client.Close()
 
 	// sleep a lil bit to allow the socket channels to communicate the shut down
-	time.Sleep(250 * time.Microsecond)
+	time.Sleep(25 * time.Millisecond)
 
 	test.Expect(t, atomic.LoadUint64(&serverClosed), uint64(1))
 	test.Expect(t, atomic.LoadUint64(&clientClosed), uint64(1))
