@@ -155,12 +155,11 @@ body {
   margin-bottom: 1px;
   border-radius: 0;
 }
-.request-toggle .panel-heading {
+.detail-toggle {
   cursor: pointer;
-  user-select: none;
 }
-.request-toggle .panel-heading:hover {
-  background: #4FC1E9;
+.detail-toggle:hover {
+  text-decoration: underline;
 }
 
 /* map */

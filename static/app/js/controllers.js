@@ -1,15 +1,13 @@
 (function(){
 
-  'use strict';
-
   // Controllers
   angular.module('Geobin.controllers', [])
 
-  .controller('NavCtrl', ['$scope', '$rootScope', 'bin', function ($scope, $rootScope, bin) {
+  .controller('NavCtrl', ['$scope', '$rootScope', 'api', 'store', function ($scope, $rootScope, api, store) {
     $scope.host = window.location.host;
     $scope.pathname = window.location.pathname.substr(1);
-    $scope.bins = bin.store.session.history;
-    $scope.create = bin.api.create;
+    $scope.bins = store.local.session.history;
+    $scope.create = api.create;
 
     $scope.$on('$locationChangeSuccess', function (event, args) {
       $scope.pathname = window.location.pathname.substr(1);
@@ -17,15 +15,15 @@
   }])
 
   // Home controller
-  .controller('HomeCtrl', ['$scope', 'bin', function ($scope, bin) {
+  .controller('HomeCtrl', ['$scope', 'api', 'store', function ($scope, api, store) {
     document.title = 'Geobin';
-    $scope.create = bin.api.create;
-    $scope.bins = bin.store.session.history;
-    $scope.enabled = bin.store.enabled;
+    $scope.create = api.create;
+    $scope.bins = store.local.session.history;
+    $scope.enabled = store.local.enabled;
   }])
 
   // Bin controller
-  .controller('BinCtrl', ['$scope', '$routeParams', 'bin', function ($scope, $routeParams, bin) {
+  .controller('BinCtrl', ['$scope', '$routeParams', 'api', function ($scope, $routeParams, api) {
     var binId = $scope.binId = $routeParams.binId;
     document.title = 'Geobin | ' + binId;
     $scope.host = window.location.host;
@@ -34,7 +32,7 @@
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
 
-    bin.api.history(binId, function (data) {
+    api.history(binId, function (data) {
       $scope.history = data;
     });
   }]);
