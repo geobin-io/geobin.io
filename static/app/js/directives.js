@@ -20,7 +20,7 @@
   }])
 
   // Bin Map
-  .directive('binMap', [function (version) {
+  .directive('binMap', ['bin', function (bin) {
     return {
       // only allow esriMap to be used as an element (<esri-map>)
       restrict: 'E',
@@ -51,10 +51,67 @@
       // this is great for when you need to expose an API for manipulaiting your directive
       // this is also the best place to setup our map
       controller: function ($scope, $element, $attrs) {
+        // setup basemaps
+        var streets = L.esri.basemapLayer('Streets');
+        var topo = L.esri.basemapLayer('Topographic');
+        var oceans = L.esri.basemapLayer('Oceans');
+        var natgeo = L.esri.basemapLayer('NationalGeographic');
+
+        var gray = L.layerGroup([
+          L.esri.basemapLayer('Gray'),
+          L.esri.basemapLayer('GrayLabels')
+        ]);
+        var darkgray = L.layerGroup([
+          L.esri.basemapLayer('DarkGray'),
+          L.esri.basemapLayer('DarkGrayLabels')
+        ]);
+        var imagery = L.layerGroup([
+          L.esri.basemapLayer('Imagery'),
+          L.esri.basemapLayer('ImageryLabels')
+        ]);
+        var shadedrelief = L.layerGroup([
+          L.esri.basemapLayer('ShadedRelief'),
+          L.esri.basemapLayer('ShadedReliefLabels')
+        ]);
+        var mapattack = L.tileLayer('http://mapattack-tiles-{s}.pdx.esri.com/dark/{z}/{y}/{x}', {
+          maxZoom: 18,
+          subdomains: '0123'
+        });
+
+        var basemaps = {
+          'Streets': streets,
+          'Topographic': topo,
+          'Oceans': oceans,
+          'NationalGeographic': natgeo,
+          'Gray': gray,
+          'DarkGray': darkgray,
+          'Imagery': imagery,
+          'ShadedRelief': shadedrelief,
+          'MapAttack': mapattack
+        };
+
+        var basemap = bin.store.get('basemap');
+
+        if (!basemap) {
+          basemap = bin.store.set('basemap', 'MapAttack');
+        }
+
         // setup our map options based on the attributes and scope
         var mapOptions = {
           center: ($attrs.center) ? $attrs.center.split(',') : $scope.center,
-          zoom: ($attrs.zoom) ? $attrs.zoom : $scope.zoom
+          zoom: ($attrs.zoom) ? $attrs.zoom : $scope.zoom,
+          layers: [basemaps[basemap]]
+        };
+
+        var shapeOptions = {
+          stroke: true,
+          color: '#00b1dc',
+          weight: 2,
+          opacity: 0.8,
+          fill: true,
+          fillColor: null,
+          fillOpacity: 0.3,
+          clickable: true
         };
 
         // declare our map
@@ -62,14 +119,15 @@
         var features = L.featureGroup().addTo(map);
         var layers = {};
 
-        L.tileLayer('http://mapattack-tiles-{s}.pdx.esri.com/dark/{z}/{y}/{x}', {
-          maxZoom: 18,
-          subdomains: '0123'
-        }).addTo(map);
+        L.control.layers(basemaps).addTo(map);
 
         $scope.toggleGeo = function (id, geo) {
           if (!layers[id]) {
-            layers[id] = L.geoJson(geo);
+            layers[id] = L.geoJson(geo, {
+              style: function (feature) {
+                return shapeOptions;
+              }
+            });
           }
           if (features.hasLayer(layers[id])) {
             return features.removeLayer(layers[id]);
@@ -93,6 +151,10 @@
           $scope.$apply(function() {
             $scope.click.call($scope, e);
           });
+        });
+
+        map.on('baselayerchange', function(e) {
+          bin.store.set('basemap', e.name);
         });
 
         $scope.$on('$destroy', function(){
