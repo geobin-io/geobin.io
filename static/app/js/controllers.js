@@ -35,6 +35,10 @@
       $scope.center = [e.latlng.lat,e.latlng.lng];
     };
 
+    $scope.isArray = function (obj) {
+      return Object.prototype.toString.call(obj) === '[object Array]';
+    };
+
     // listen for click broadcasts
     $scope.$on('map.click', function (event, e) {
       console.log('broadcast', event, e);

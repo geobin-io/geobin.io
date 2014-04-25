@@ -5,10 +5,10 @@
       ng-repeat="item in history track by $index"
       ng-class="{open: open}">
       <div class="panel-heading"
-        ng-click="open = !open"
+        ng-click="open = !open; toggleGeo(item.timestamp, item.geo)"
         ng-class="{open: open}">
         {{item.timestamp | prettyDate}}
-        <span ng-if="typeof item.geo === 'array'" class="badge badge-danger pull-right">
+        <span ng-if="isArray(item.geo)" class="badge badge-danger pull-right">
           {{item.geo | length}}
         </span>
       </div>

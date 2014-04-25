@@ -40,7 +40,7 @@
         // the 'link' function handles how our directive responds to changes in $scope
         return function (scope, element, attrs, controller) {
           scope.$watch('center', function (newCenter, oldCenter) {
-            if(newCenter !== oldCenter){
+            if (newCenter !== oldCenter) {
               controller.centerAt(newCenter);
             }
           });
@@ -59,16 +59,22 @@
 
         // declare our map
         var map = new L.Map($attrs.id, mapOptions);
+        var features = L.featureGroup().addTo(map);
+        var layers = {};
 
         L.tileLayer('http://mapattack-tiles-{s}.pdx.esri.com/dark/{z}/{y}/{x}', {
           maxZoom: 18,
           subdomains: '0123'
         }).addTo(map);
 
-        // start exposing an API by setting properties on 'this' which is our controller
-        // lets expose the 'addLayer' method so child directives can add themselves to the map
-        this.addLayer = function (layer) {
-          return map.addLayer(layer);
+        $scope.toggleGeo = function (id, geo) {
+          if (!layers[id]) {
+            layers[id] = L.geoJson(geo);
+          }
+          if (features.hasLayer(layers[id])) {
+            return features.removeLayer(layers[id]);
+          }
+          features.addLayer(layers[id]);
         };
 
         // lets expose a version of centerAt that takes an array of [lng,lat]
@@ -91,7 +97,6 @@
 
         $scope.$on('$destroy', function(){
           map.remove();
-          console.log(map);
         });
       }
     };
