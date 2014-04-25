@@ -1,7 +1,5 @@
 (function(){
 
-  'use strict';
-
   // Filters
   angular.module('Geobin.filters', [])
 
@@ -44,10 +42,10 @@
     };
   }])
 
-  // objLength
-  // ----------
+  // arrLength
+  // ---------
 
-  .filter('length', [function () {
+  .filter('arrLength', [function () {
     return function (obj) {
       if (typeof obj === 'array') {
         return obj.length;
@@ -56,18 +54,14 @@
     };
   }])
 
-  // jsonStringify
+  // prettyJson
   // ----------
 
-  .filter('jsonStringify', [function () {
+  .filter('prettyJson', [function () {
     return function (str) {
       var ret = str;
-      try {
-        var ret = JSON.parse(ret);
-      } catch (e) {}
-      try {
-        var ret = JSON.stringify(ret, null, 2);
-      } catch (e) {}
+      try { ret = JSON.parse(ret); } catch (e) {}
+      try { ret = JSON.stringify(ret, null, 2); } catch (e) {}
       return ret;
     };
   }]);

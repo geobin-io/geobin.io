@@ -1,7 +1,5 @@
 (function(){
 
-  'use strict';
-
   angular.module('Geobin', [
     'ngRoute',
     'Geobin.filters',

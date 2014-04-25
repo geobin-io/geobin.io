@@ -1,7 +1,5 @@
 (function(){
 
-  'use strict';
-
   // Services
   angular.module('Geobin.services', [])
 
@@ -11,45 +9,86 @@
   // API Version
   .value('apiVersion', '1')
 
-  // Bins!
-  .service('bin', ['$http', '$location', 'apiVersion', function ($http, $location, apiVersion) {
+  // Basemaps
+  // --------
+  // Houses all available basemaps, specifies default
 
-    // Store
-    // -----
-    // localStorage interface for browser-based user persistence
+  .service('basemaps', function () {
+    this.init = function () {
+      var streets = L.esri.basemapLayer('Streets');
+      var topo = L.esri.basemapLayer('Topographic');
+      var oceans = L.esri.basemapLayer('Oceans');
+      var natgeo = L.esri.basemapLayer('NationalGeographic');
+      var gray = L.layerGroup([
+        L.esri.basemapLayer('Gray'),
+        L.esri.basemapLayer('GrayLabels')
+      ]);
+      var darkgray = L.layerGroup([
+        L.esri.basemapLayer('DarkGray'),
+        L.esri.basemapLayer('DarkGrayLabels')
+      ]);
+      var imagery = L.layerGroup([
+        L.esri.basemapLayer('Imagery'),
+        L.esri.basemapLayer('ImageryLabels')
+      ]);
+      var shadedrelief = L.layerGroup([
+        L.esri.basemapLayer('ShadedRelief'),
+        L.esri.basemapLayer('ShadedReliefLabels')
+      ]);
+      var mapattack = L.tileLayer('http://mapattack-tiles-{s}.pdx.esri.com/dark/{z}/{y}/{x}', {
+        maxZoom: 18,
+        subdomains: '0123'
+      });
 
-    var store = this.store = new TinyStore('geobin');
+      this.all = {
+        'Streets': streets,
+        'Topographic': topo,
+        'Oceans': oceans,
+        'Nat Geo': natgeo,
+        'Gray': gray,
+        'Dark Gray': darkgray,
+        'Imagery': imagery,
+        'Shaded Relief': shadedrelief,
+        'Map Attack': mapattack
+      };
 
-    cleanHistory(store);
+      this.def = 'Map Attack';
+    };
 
-    function cleanHistory (store) {
-      var h = store.session.history = store.session.history || [];
+    this.init();
+  })
+
+  // Store
+  // -----
+  // localStorage interface for browser-based user persistence
+
+  .service('store', function () {
+
+    var local = new TinyStore('geobin');
+
+    (function cleanHistory () {
+      var h = local.session.history = local.session.history || [];
+      var n = Math.floor(new Date().getTime() / 1000);
 
       for (var i = h.length - 1; i >= 0; i--) {
-        var diff = h[i].expires - Math.floor(new Date().getTime() / 1000);
+        var diff = h[i].expires - n;
         if (diff < 1) {
           h.splice(i, 1);
         }
       }
 
-      store.save();
-    }
+      local.save();
+    })();
 
-    // User
-    // ----
-    // helpers for browser-based user persistence
+    this.local = local;
 
-    var user = this.user = {};
+  })
 
-    user.getHistory = function () {
-      return store.get('history');
-    };
+  // API
+  // ---
+  // helpers for interacting with the Geobin API
 
-    // API
-    // ---
-    // helpers for interacting with the Geobin API
-
-    var api = this.api = {};
+  .service('api', ['$http', '$location', 'store', 'apiVersion', function ($http, $location, store, apiVersion) {
 
     // Create
     // ------
@@ -58,11 +97,11 @@
     // * id (string)
     // * expires (unix timestamp)
 
-    api.create = function () {
+    this.create = function () {
       $http.post('/api/' + apiVersion + '/create', {})
       .success(function createSuccess (data, status, headers, config) {
-        store.session.history.push(data);
-        store.save();
+        store.local.session.history.push(data);
+        store.local.save();
         $location.path('/' + data.id);
       });
     };
@@ -74,9 +113,9 @@
     // * timestamp
     // * headers
     // * body
-    // * geojson
+    // * geo
 
-    api.history = function (binId, callback) {
+    this.history = function (binId, callback) {
       $http.post('/api/' + apiVersion + '/history/' + binId, {})
       .success(function historySuccess (data, status, headers, config) {
         if (status === 200) {

@@ -4,13 +4,16 @@
       ng-init="open = false"
       ng-repeat="item in history track by $index"
       ng-class="{open: open}">
-      <div class="panel-heading"
-        ng-click="open = !open; toggleGeo(item.timestamp, item.geo)"
-        ng-class="{open: open}">
-        {{item.timestamp | prettyDate}}
+      <div class="panel-heading" ng-class="{open: open}">
+        <span class="detail-toggle" ng-click="open = !open">{{item.timestamp | prettyDate}}</span>
+
         <span ng-if="isArray(item.geo)" class="badge badge-danger pull-right">
-          {{item.geo | length}}
+          {{item.geo | arrLength}}
         </span>
+
+        <input class="pull-right" type="checkbox"
+          ng-if="item.geo"
+          ng-click="toggleGeo(item.timestamp, item.geo)">
       </div>
 
       <ul class="list-group" ng-show="open">
@@ -22,7 +25,7 @@
       <ul class="list-group" ng-show="open">
         <li class="list-group-item">
           <p>body</p>
-          <pre>{{item.body | jsonStringify}}</pre>
+          <pre>{{item.body | prettyJson}}</pre>
         </li>
       </ul>
     </div>
