@@ -30,15 +30,9 @@
     document.title = 'Geobin | ' + binId;
     $scope.host = window.location.host;
 
-    // expose a method for handling clicks
-    $scope.click = function (e) {
-      $scope.center = [e.latlng.lat,e.latlng.lng];
+    $scope.isArray = function (obj) {
+      return Object.prototype.toString.call(obj) === '[object Array]';
     };
-
-    // listen for click broadcasts
-    $scope.$on('map.click', function (event, e) {
-      console.log('broadcast', event, e);
-    });
 
     bin.api.history(binId, function (data) {
       $scope.history = data;

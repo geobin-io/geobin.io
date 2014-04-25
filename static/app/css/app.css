@@ -147,6 +147,10 @@ body {
 .request-toggle:last-child .panel-heading:not(.open) {
   border-radius: 0 0 4px 4px;
 }
+.request-toggle:only-child .panel-heading:not(.open) {
+  border-radius: 4px;
+}
+/* what am I even doing here */
 .request-toggle.open.panel:not(:last-child)>.list-group:last-child .list-group-item:last-child {
   margin-bottom: 1px;
   border-radius: 0;
