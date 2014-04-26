@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-
-	gtjson "github.com/Esri/geotrigger-go/geotrigger/json"
 	gj "github.com/kpawlik/geojson"
 )
 
@@ -80,112 +78,6 @@ func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
 	*/
 
 	return &gr
-}
-
-func (gr *GeobinRequest) parseGeojson() (js map[string]interface{}, foundGeojson bool) {
-	var t string
-	var geo interface{}
-	b := []byte(gr.Body)
-
-	if err := json.Unmarshal(b, &js); err != nil {
-		fmt.Fprintln(os.Stdout, "error unmarshalling json:", err)
-	} else {
-		fmt.Fprintln(os.Stdout, "Json unmarshalled:", js)
-		if err := gtjson.GetValueFromJSONObject(js, "type", &t); err != nil {
-			fmt.Fprintln(os.Stdout, "Get value from json for type failed:", err)
-		} else {
-			unmarshal := func(buf []byte, target interface{}) (e error) {
-				if e = json.Unmarshal(buf, target); e != nil {
-					fmt.Fprintf(os.Stdout, "couldn't unmarshal %v to geojson: %v\n", t, e)
-				}
-				return
-			}
-
-			fmt.Fprintln(os.Stdout, "Found type:", t)
-			switch t {
-			case "Point":
-				var p gj.Point
-				if err = unmarshal(b, &p); err != nil {
-					break
-				}
-
-				geo = p
-				foundGeojson = true
-				break
-			case "LineString":
-				var ls gj.LineString
-				if err = unmarshal(b, &ls); err != nil {
-					break
-				}
-
-				geo = ls
-				foundGeojson = true
-				break
-			case "Polygon":
-				var p gj.Polygon
-				if err = unmarshal(b, &p); err != nil {
-					break
-				}
-
-				geo = p
-				foundGeojson = true
-				break
-			case "MultiPoint":
-				var mp gj.MultiPoint
-				if err = unmarshal(b, &mp); err != nil {
-					break
-				}
-
-				geo = mp
-				foundGeojson = true
-				break
-			case "MultiPolygon":
-				var mp gj.MultiPolygon
-				if err = unmarshal(b, &mp); err != nil {
-					break
-				}
-
-				geo = mp
-				foundGeojson = true
-				break
-			case "GeometryCollection":
-				var gc gj.GeometryCollection
-				if err = unmarshal(b, &gc); err != nil {
-					break
-				}
-
-				geo = gc
-				foundGeojson = true
-				break
-			case "Feature":
-				var f gj.Feature
-				if err = unmarshal(b, &f); err != nil {
-					break
-				}
-
-				geo = f
-				foundGeojson = true
-				break
-			case "FeatureCollection":
-				var fc gj.FeatureCollection
-				if err = unmarshal(b, &fc); err != nil {
-					break
-				}
-
-				geo = fc
-				foundGeojson = true
-				break
-			default:
-				fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
-				break
-			}
-		}
-	}
-	if foundGeojson {
-		gjs, _ := gj.Marshal(geo)
-		json.Unmarshal([]byte(gjs), &gr.Geo)
-	}
-	return js, foundGeojson
 }
 
 func (gr *GeobinRequest) parse(b interface{}) {
