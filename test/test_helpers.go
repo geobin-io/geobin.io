@@ -1,11 +1,12 @@
 package test
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
-// mustBeNil()/mustNotBeNil() isNillable() author: courtf
+// MustBeNil asserts that a is nil
+// author: courtf
 func MustBeNil(t *testing.T, a interface{}) {
 	tp := reflect.TypeOf(a)
 
@@ -14,6 +15,8 @@ func MustBeNil(t *testing.T, a interface{}) {
 	}
 }
 
+// MustNotBeNil asserts that a is not nil
+// author: courtf
 func MustNotBeNil(t *testing.T, a interface{}) {
 	tp := reflect.TypeOf(a)
 
@@ -22,6 +25,8 @@ func MustNotBeNil(t *testing.T, a interface{}) {
 	}
 }
 
+// IsNillable asserts that nillable is nillable
+// author: courtf
 func IsNillable(k reflect.Kind) (nillable bool) {
 	kinds := []reflect.Kind{
 		reflect.Chan,
@@ -42,6 +47,7 @@ func IsNillable(k reflect.Kind) (nillable bool) {
 	return
 }
 
+// Expect tests equality of a and b
 // Warning: directly comparing functions is unreliable
 func Expect(t *testing.T, a interface{}, b interface{}) {
 	btype := reflect.TypeOf(b)
@@ -56,6 +62,7 @@ func Expect(t *testing.T, a interface{}, b interface{}) {
 	}
 }
 
+// Refute tests inequality of a and b
 // Warning: directly comparing functions is unreliable
 func Refute(t *testing.T, a interface{}, b interface{}) {
 	btype := reflect.TypeOf(b)

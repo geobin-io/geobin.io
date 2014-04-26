@@ -5,7 +5,7 @@ import "encoding/json"
 import "strings"
 import "reflect"
 
-var r *strings.Replacer = strings.NewReplacer(" ", "", "\n", "", "\t", "")
+var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
 func runTest(js string, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))

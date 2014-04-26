@@ -1,16 +1,17 @@
-// The `socket` package wraps the `github.com/gorilla/websocket` package with a basic implementation
+// Package socket wraps the `github.com/gorilla/websocket` package with a basic implementation
 // based on their sample code, with the goal of greatly reducing the interface for some generalized
 // use cases.
 package socket
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -51,7 +52,7 @@ type s struct {
 	onClose func(name string)
 }
 
-// Upgrade an existing TCP connection to a websocket connection in response to a client request for a websocket.
+// NewSocket upgrades an existing TCP connection to a websocket connection in response to a client request for a websocket.
 // `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
 // by calling a provided function (settable with `SetOnClose()`).
 // `or` here is the func that's called when a message is read from the socket. The call is made from a separate routine.
@@ -72,7 +73,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request, or func(int,
 	return socketSetup(name, ws, or, oc), nil
 }
 
-// Create a client web socket connection to the host running at the provided URL.
+// NewClient creates a client web socket connection to the host running at the provided URL.
 // `name` here is just an identifying string for the socket, which will be returned when/if the socket is closed
 // by calling a provided function (settable with `SetOnClose()`).
 // `or` here is the func that's called when a message is read from the socket. The call is made from a separate routine.
@@ -80,10 +81,10 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request, or func(int,
 // `oc` here is the func that's called when the socket is just about to be closed. The call is made from a
 // separate routine.
 // If you do not care about these callbacks, pass nil instead.
-func NewClient(name string, socketUrl string, or func(int, []byte), oc func(string)) (S, error) {
-	u, err := url.Parse(socketUrl)
+func NewClient(name string, socketURL string, or func(int, []byte), oc func(string)) (S, error) {
+	u, err := url.Parse(socketURL)
 	if err != nil {
-		log.Println("Could not parse URL from provided URL string:", socketUrl, err)
+		log.Println("Could not parse URL from provided URL string:", socketURL, err)
 		return nil, err
 	}
 

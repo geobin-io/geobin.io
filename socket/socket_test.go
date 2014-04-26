@@ -2,17 +2,18 @@ package socket
 
 import (
 	"fmt"
-	"github.com/geoloqi/geobin-go/test"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/geoloqi/geobin-go/test"
 )
 
 func TestRoundTrip(t *testing.T) {
-	var msgCount uint64 = 0
+	var msgCount uint64
 	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
@@ -22,7 +23,7 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestManyRoundTripsManySockets(t *testing.T) {
-	var msgCount uint64 = 0
+	var msgCount uint64
 	ts := makeRoundTripServer(t, "test_socket", func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
@@ -46,7 +47,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	count := 1000
 	interval := 100 * time.Microsecond
 
-	var serverMsgReceivedCount uint64 = 0
+	var serverMsgReceivedCount uint64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sck, err := NewSocket("test_socket", w, r, func(messageType int, message []byte) {
 			atomic.AddUint64(&serverMsgReceivedCount, 1)
@@ -62,7 +63,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	var clientMsgReceivedCount uint64 = 0
+	var clientMsgReceivedCount uint64
 	client := makeClient(t, ts.URL, "test_client", func(messageType int, message []byte) {
 		atomic.AddUint64(&clientMsgReceivedCount, 1)
 		test.Expect(t, string(message), "You got a message!")
@@ -72,7 +73,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	go writeLotsaMessages(client, count, interval)
 
 	// a sleep duration ~50% longer than the time needed to write all the messages
-	micros := time.Duration(float64(count) * 1.5) * interval
+	micros := time.Duration(float64(count)*1.5) * interval
 	// sleep a bit to let the messages be sent
 	time.Sleep(micros)
 	test.Expect(t, atomic.LoadUint64(&clientMsgReceivedCount), uint64(count))
@@ -80,14 +81,14 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 }
 
 func TestOnClose(t *testing.T) {
-	var serverClosed uint64 = 0
+	var serverClosed uint64
 	ts := makeRoundTripServer(t, "test_socket", nil, func(name string) {
 		atomic.AddUint64(&serverClosed, 1)
 		test.Expect(t, name, "test_socket")
 	})
 	defer ts.Close()
 
-	var clientClosed uint64 = 0
+	var clientClosed uint64
 	client := makeClient(t, ts.URL, "test_client", nil, func(name string) {
 		atomic.AddUint64(&clientClosed, 1)
 		test.Expect(t, name, "test_client")
@@ -125,7 +126,7 @@ func makeClient(t *testing.T, url string, name string, or func(int, []byte), oc 
 }
 
 func roundTrip(t *testing.T, ts *httptest.Server, clientName string) {
-	var msgCount uint64 = 0
+	var msgCount uint64
 	client := makeClient(t, ts.URL, clientName, func(messageType int, message []byte) {
 		atomic.AddUint64(&msgCount, 1)
 		test.Expect(t, string(message), "You got a message!")
