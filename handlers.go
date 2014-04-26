@@ -62,7 +62,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save to redis
-	if res := client.ZAdd(n, redis.Z{0, ""}); res.Err() != nil {
+	if res := client.ZAdd(n, redis.Z{Score: 0, Member: ""}); res.Err() != nil {
 		log.Println("Failure to ZADD to", n, res.Err())
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
@@ -129,7 +129,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error marshalling request:", err)
 	}
 
-	if res := client.ZAdd(name, redis.Z{float64(time.Now().UTC().Unix()), string(encoded)}); res.Err() != nil {
+	if res := client.ZAdd(name, redis.Z{Score: float64(time.Now().UTC().Unix()), Member: string(encoded)}); res.Err() != nil {
 		log.Println("Failure to ZADD to", name, res.Err())
 	}
 
