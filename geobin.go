@@ -3,11 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/geoloqi/geobin-go/manager"
-	"github.com/geoloqi/geobin-go/socket"
-	"github.com/gorilla/mux"
-	gu "github.com/nu7hatch/gouuid"
-	redis "github.com/vmihailenco/redis/v2"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -16,6 +11,12 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/geoloqi/geobin-go/manager"
+	"github.com/geoloqi/geobin-go/socket"
+	"github.com/gorilla/mux"
+	gu "github.com/nu7hatch/gouuid"
+	redis "github.com/vmihailenco/redis/v2"
 )
 
 type Config struct {

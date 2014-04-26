@@ -14,7 +14,7 @@ func runTest(js string, t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if !reflect.DeepEqual(jsMap, gr.Geo) {
+	if !reflect.DeepEqual(jsMap, gr.Geo[0]) {
 		t.Errorf("Expected %v, (type %v) - Got %v (type %v)", jsMap, reflect.TypeOf(jsMap), gr.Geo, reflect.TypeOf(gr.Geo))
 		return
 	}
