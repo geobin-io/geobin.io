@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"sync"
 
 	gj "github.com/kpawlik/geojson"
@@ -37,7 +39,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 	}
 
 	gr.wg.Add(1)
-	go gr.parse(js)
+	go gr.parse(js, make([]interface{}, 0))
 	go func() {
 		for {
 			geo, ok := <-gr.c
@@ -51,63 +53,85 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 	gr.wg.Wait()
 	close(gr.c)
 
-	/*
-		// If we didn't find any geojson search for any coordinates in the body.
-		if false {
-			// TODO: Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
-			// placing any additional data near those keys in the properties key.
-			// The code below is just my initial lat/long detection code: needs improvement
-			latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
-			lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
-
-			var lat, lng float64
-			var foundLat, foundLng bool
-			bStr := string(b)
-			if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
-				lat, _ = strconv.ParseFloat(latMatches[1], 64)
-				foundLat = true
-			}
-
-			if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
-				lng, _ = strconv.ParseFloat(lngMatches[1], 64)
-				foundLng = true
-			}
-
-			if foundLat && foundLng {
-				p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
-				pstr, _ := gj.Marshal(p)
-				json.Unmarshal([]byte(pstr), &gr.Geo)
-			}
-		}
-	*/
-
 	return &gr
 }
 
-func (gr *GeobinRequest) parse(b interface{}) {
+func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 	switch t := b.(type) {
 	case []interface{}:
-		gr.parseArray(t)
+		gr.parseArray(t, kp)
 	case map[string]interface{}:
-		gr.parseObject(t)
+		gr.parseObject(t, kp)
 	}
 	gr.wg.Done()
 }
 
-func (gr *GeobinRequest) parseObject(o map[string]interface{}) {
+func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
+		o["geobinRequestPath"] = kp
 		gr.c <- o
-	} else if isOtherGeo(o) {
+	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
+		geo["geobinRequestPath"] = kp
+		gr.c <- geo
 	} else {
-		for _, v := range o {
+		for k, v := range o {
+			kp = append(kp, k)
 			gr.wg.Add(1)
-			go gr.parse(v)
+			go gr.parse(v, kp)
 		}
 	}
 }
 
-func isOtherGeo(o map[string]interface{}) bool {
-	return false
+func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
+	for i, o := range a {
+		kp = append(kp, i)
+		gr.wg.Add(1)
+		go gr.parse(o, kp)
+	}
+}
+
+func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
+	latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
+	lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
+	dstRegex := regexp.MustCompile(`.*(?:dist(?:ance)?|(?:rad(?:ius)?))(?:")*: ?([0-9.-]*)`)
+
+	b, err := json.Marshal(o)
+	if err != nil {
+		return false, nil
+	}
+
+	var foundLat, foundLng, foundDst bool
+	var lat, lng, dst float64
+	bStr := string(b)
+
+	if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
+		lat, _ = strconv.ParseFloat(latMatches[1], 64)
+		foundLat = true
+	}
+
+	if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
+		lng, _ = strconv.ParseFloat(lngMatches[1], 64)
+		foundLng = true
+	}
+
+	if dstMatches := dstRegex.FindStringSubmatch(bStr); dstMatches != nil {
+		dst, _ = strconv.ParseFloat(dstMatches[1], 64)
+		foundDst = true
+	}
+
+	if foundLat && foundLng {
+		p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
+		pstr, _ := gj.Marshal(p)
+		var geo map[string]interface{}
+		json.Unmarshal([]byte(pstr), &geo)
+		if foundDst {
+			geo["geobinRadius"] = dst
+		}
+		fmt.Fprintln(os.Stdout, "Found other geo:", geo)
+		return true, geo
+	}
+
+	return false, nil
 }
 
 func isGeojson(js map[string]interface{}) bool {
@@ -188,12 +212,5 @@ func isGeojson(js map[string]interface{}) bool {
 	default:
 		fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
 		return false
-	}
-}
-
-func (gr *GeobinRequest) parseArray(a []interface{}) {
-	for _, o := range a {
-		gr.wg.Add(1)
-		go gr.parse(o)
 	}
 }
