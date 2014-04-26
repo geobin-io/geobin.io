@@ -10,7 +10,7 @@ import (
 // randomString returns a random string with the given length
 func randomString(length int) (string, error) {
 	b := make([]byte, length)
-	for i, _ := range b {
+	for i := range b {
 		b[i] = config.NameVals[rand.Intn(len(config.NameVals))]
 	}
 

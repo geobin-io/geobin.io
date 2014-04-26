@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
 	gj "github.com/kpawlik/geojson"
 )
 
+// GeobinRequest stores received data and any detected geo info from a request
 type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
@@ -17,17 +19,19 @@ type GeobinRequest struct {
 	c         chan map[string]interface{}
 }
 
-func NewGeobinRequest(ts int64, h map[string]string, b []byte) *GeobinRequest {
+// NewGeobinRequest creates and new GeobinRequest with the given timestamp,
+// headers, and body
+func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *GeobinRequest {
 	gr := GeobinRequest{
-		Timestamp: ts,
-		Headers:   h,
-		Body:      string(b),
+		Timestamp: timestamp,
+		Headers:   headers,
+		Body:      string(body),
 		wg:        &sync.WaitGroup{},
 		c:         make(chan map[string]interface{}),
 	}
 
 	var js interface{}
-	if err := json.Unmarshal(b, &js); err != nil {
+	if err := json.Unmarshal(body, &js); err != nil {
 		fmt.Fprintln(os.Stdout, "No json found in request:", gr.Body)
 		return &gr
 	}
