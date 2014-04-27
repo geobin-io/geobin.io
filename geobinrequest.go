@@ -21,8 +21,10 @@ type GeobinRequest struct {
 	c         chan map[string]interface{}
 }
 
-// NewGeobinRequest creates and new GeobinRequest with the given timestamp,
-// headers, and body
+// NewGeobinRequest creates a new GeobinRequest with the given timestamp,
+// headers, and body. It will search the given body for the presence of
+// any geo data and fill the returned GeobinRequest's Geo property with
+// an array of geoJSON objects using said geo data.
 func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *GeobinRequest {
 	gr := GeobinRequest{
 		Timestamp: timestamp,
@@ -90,10 +92,35 @@ func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 	}
 }
 
+// isOtherGeo searches for non-standard geo data in the given json map. It looks for the presence
+// of lat/lng (and a few variations thereof) or x/y values in the object as well as a distance/radius/accuracy
+// field and creates a geojson point out of it and returns that, along with a boolean value
+// representing whether or not it found any geo data in the object. It will also look for
+// any keys that hold an array of two numbers with a key name that suggests that it might
+// be a lng/lat array.
+//
+// The following keys will be detected as Latitude:
+//	"lat", "latitude"
+//	"y"
+//
+// The following keys will be detected as Longitude:
+//	"lng", "long", "longitude"
+//	"x"
+//
+// The following keys will be used to fill the "geobinRadius" property of the resulting geojson:
+//	"dist", "distance"
+//	"rad", "radius"
+//	"acc", "accuracy"
+//
+// The following keys will be searched for a long/lat pair:
+//	"geo"
+//	"loc" or "location"
+//	"coord", "coords", "coordinate" or "coordinates"
 func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
-	latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
-	lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
-	dstRegex := regexp.MustCompile(`.*(?:dist(?:ance)?|(?:rad(?:ius)?))(?:")*: ?([0-9.-]*)`)
+	latRegex := regexp.MustCompile(`['"](?:lat(?:itude)?|y)['"]: ?(-?[0-9]+\.?[0-9]*)[,\n ]`)
+	lngRegex := regexp.MustCompile(`['"](?:lo?ng(?:itude)?|x)['"]: ?(-?[0-9]+\.?[0-9]*)[,\n ]`)
+	dstRegex := regexp.MustCompile(`['"](?:dist(?:ance)?|(?:rad(?:ius)?)|(?:acc(?:uracy)?))['"]: ?([0-9]+\.?[0-9]*)[,\n ]`)
+	geoRegex := regexp.MustCompile(`['"](?:geo|loc(?:ation)?|coord(?:inate)?s?)['"]: ?\[(-?[0-9]+\.?[0-9]*), (-?[0-9]+\.?[0-9]*)]`)
 
 	b, err := json.Marshal(o)
 	if err != nil {
@@ -105,13 +132,27 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 	bStr := string(b)
 
 	if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
-		lat, _ = strconv.ParseFloat(latMatches[1], 64)
-		foundLat = true
+		if lat, err = strconv.ParseFloat(latMatches[1], 64); err == nil {
+			foundLat = true
+		}
 	}
 
 	if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
-		lng, _ = strconv.ParseFloat(lngMatches[1], 64)
-		foundLng = true
+		if lng, err = strconv.ParseFloat(lngMatches[1], 64); err == nil {
+			foundLng = true
+		}
+	}
+
+	if !foundLat && !foundLng {
+		// Look for a set of coordinates (in long/lat or x/y order)
+		if geoMatches := geoRegex.FindStringSubmatch(bStr); geoMatches != nil {
+			if lng, err = strconv.ParseFloat(geoMatches[1], 64); err == nil {
+				if lat, err = strconv.ParseFloat(geoMatches[2], 64); err == nil {
+					foundLat = true
+					foundLng = true
+				}
+			}
+		}
 	}
 
 	if dstMatches := dstRegex.FindStringSubmatch(bStr); dstMatches != nil {
@@ -134,6 +175,8 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 	return false, nil
 }
 
+// isGeojson detects whether or not the given json map is valid GeoJSON and
+// returns a boolean reflecting its findings.
 func isGeojson(js map[string]interface{}) bool {
 	t, ok := js["type"]
 	unmarshal := func(buf []byte, target interface{}) (e error) {
