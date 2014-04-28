@@ -6,6 +6,7 @@ import "strings"
 import "reflect"
 
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
+var emptyPath = make([]interface{}, 0)
 
 func runTest(js string, reqPath []interface{}, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
@@ -13,6 +14,9 @@ func runTest(js string, reqPath []interface{}, t *testing.T) {
 	if err := json.Unmarshal([]byte(js), &jsMap); err != nil {
 		t.Error(err)
 		return
+	}
+	if reqPath == nil {
+		reqPath = emptyPath
 	}
 	jsMap["geobinRequestPath"] = reqPath
 	if !reflect.DeepEqual(jsMap, gr.Geo[0]) {
@@ -22,13 +26,11 @@ func runTest(js string, reqPath []interface{}, t *testing.T) {
 }
 
 func TestRequestWithGJPoint(t *testing.T) {
-	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, make([]interface{}, 0), t)
+	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, nil, t)
 }
 
-// TODO: adapt all of these tests to use the new runTest signature!
-/*
 func TestRequestWithGJLineString(t *testing.T) {
-	runTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, t)
+	runTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, nil, t)
 }
 
 func TestRequestWithGJPolygon(t *testing.T) {
@@ -46,8 +48,8 @@ func TestRequestWithGJPolygon(t *testing.T) {
 		]
 	}`
 
-	runTest(jsNoHoles, t)
-	runTest(jsHoles, t)
+	runTest(jsNoHoles, nil, t)
+	runTest(jsHoles, nil, t)
 }
 
 func TestRequestWithGJMultiPoint(t *testing.T) {
@@ -55,7 +57,7 @@ func TestRequestWithGJMultiPoint(t *testing.T) {
 		"type": "MultiPoint",
 		"coordinates": [ [100, 0], [101, 1] ]
 	}`
-	runTest(js, t)
+	runTest(js, nil, t)
 }
 
 func TestRequestWithGJMultiPolygon(t *testing.T) {
@@ -67,7 +69,7 @@ func TestRequestWithGJMultiPolygon(t *testing.T) {
 			[[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]
 		]
 	}`
-	runTest(js, t)
+	runTest(js, nil, t)
 }
 
 func TestRequestWithGJGeometryCollection(t *testing.T) {
@@ -84,7 +86,7 @@ func TestRequestWithGJGeometryCollection(t *testing.T) {
 			}
     ]
   }`
-	runTest(js, t)
+	runTest(js, nil, t)
 }
 
 func TestRequestWithGJFeature(t *testing.T) {
@@ -99,7 +101,7 @@ func TestRequestWithGJFeature(t *testing.T) {
 			"foo": "bar"
 		}
 	}`
-	runTest(js, t)
+	runTest(js, nil, t)
 }
 
 func TestRequestWithGJFeatureCollection(t *testing.T) {
@@ -119,7 +121,7 @@ func TestRequestWithGJFeatureCollection(t *testing.T) {
 			}
 		]
 	}`
-	runTest(js, t)
+	runTest(js, nil, t)
 }
 
 func TestRequestWithNonGJPoint(t *testing.T) {
@@ -137,4 +139,3 @@ func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 func TestGTCallbackRequest(t *testing.T) {
 	// TODO: use gtCallback.json file!
 }
-*/
