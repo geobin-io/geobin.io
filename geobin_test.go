@@ -7,23 +7,26 @@ import "reflect"
 
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
-func runTest(js string, t *testing.T) {
+func runTest(js string, reqPath []interface{}, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
 	var jsMap map[string]interface{}
 	if err := json.Unmarshal([]byte(js), &jsMap); err != nil {
 		t.Error(err)
 		return
 	}
+	jsMap["geobinRequestPath"] = reqPath
 	if !reflect.DeepEqual(jsMap, gr.Geo[0]) {
-		t.Errorf("Expected %v, (type %v) - Got %v (type %v)", jsMap, reflect.TypeOf(jsMap), gr.Geo, reflect.TypeOf(gr.Geo))
+		t.Errorf("Exp %v, (type %v)\nGot %v (type %v)", jsMap, reflect.TypeOf(jsMap), gr.Geo[0], reflect.TypeOf(gr.Geo))
 		return
 	}
 }
 
 func TestRequestWithGJPoint(t *testing.T) {
-	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, t)
+	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, make([]interface{}, 0), t)
 }
 
+// TODO: adapt all of these tests to use the new runTest signature!
+/*
 func TestRequestWithGJLineString(t *testing.T) {
 	runTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, t)
 }
@@ -130,3 +133,8 @@ func TestRequestWithNonGJPoints(t *testing.T) {
 func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 	// TODO:
 }
+
+func TestGTCallbackRequest(t *testing.T) {
+	// TODO: use gtCallback.json file!
+}
+*/
