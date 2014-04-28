@@ -8,6 +8,12 @@ import "reflect"
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 var emptyPath = make([]interface{}, 0)
 
+func init() {
+	// make the default for isDebug be true when running tests. If you run `go test -debug=false`
+	// the tests will not print out the debug info.
+	*isDebug = true
+}
+
 func runTest(js string, reqPath []interface{}, t *testing.T) {
 	gr := NewGeobinRequest(0, nil, []byte(js))
 	var jsMap map[string]interface{}
