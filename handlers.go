@@ -92,7 +92,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// View a bin
+// log a request into a bin
 func binHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("bin -", r.URL)
 	name := mux.Vars(r)["name"]

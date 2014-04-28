@@ -142,7 +142,7 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 		}
 	}
 
-	if foundLat && foundLng {
+	if foundLat && foundLng && latIsValid(lat) && lngIsValid(lng) {
 		p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
 		pstr, _ := gj.Marshal(p)
 		var geo map[string]interface{}
@@ -238,4 +238,14 @@ func isGeojson(js map[string]interface{}) bool {
 		debugLog("Unknown geo type:", t)
 		return false
 	}
+}
+
+// latIsValid returns true if lat is within [-90.0, 90.0]
+func latIsValid(lat float64) bool {
+	return (lat >= -90.0 && lat <= 90.0)
+}
+
+// lngIsValid returns true if lng is within [-180.0, 180.0]
+func lngIsValid(lng float64) bool {
+	return (lng >= -180.0 && lng <= 180.0)
 }
