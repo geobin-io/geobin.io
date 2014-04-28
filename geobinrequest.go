@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 	"sync"
 
@@ -35,7 +33,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 
 	var js interface{}
 	if err := json.Unmarshal(body, &js); err != nil {
-		fmt.Fprintln(os.Stdout, "No json found in request:", gr.Body)
+		debugLog("No json found in request:", gr.Body)
 		return &gr
 	}
 
@@ -147,7 +145,7 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 		if foundDst {
 			geo["geobinRadius"] = dst
 		}
-		fmt.Fprintln(os.Stdout, "Found other geo:", geo)
+		debugLog("Found other geo:", geo)
 		return true, geo
 	}
 
@@ -160,7 +158,7 @@ func isGeojson(js map[string]interface{}) bool {
 	t, ok := js["type"]
 	unmarshal := func(buf []byte, target interface{}) (e error) {
 		if e = json.Unmarshal(buf, target); e != nil {
-			fmt.Fprintf(os.Stdout, "couldn't unmarshal %v to geojson: %v\n", t, e)
+			debugLog("Couldn't unmarshal", t, "to geojson:", e)
 		}
 		return
 	}
@@ -169,7 +167,7 @@ func isGeojson(js map[string]interface{}) bool {
 		return false
 	}
 
-	fmt.Fprintln(os.Stdout, "Found type:", t)
+	debugLog("Found type:", t)
 	b, err := json.Marshal(js)
 	if err != nil {
 		return false
@@ -232,7 +230,7 @@ func isGeojson(js map[string]interface{}) bool {
 
 		return true
 	default:
-		fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
+		debugLog("Unknown geo type:", t)
 		return false
 	}
 }

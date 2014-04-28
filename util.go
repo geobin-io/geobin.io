@@ -47,3 +47,9 @@ func manageSockets(sf func(sockets map[string]map[string]socket.S)) {
 		}
 	})
 }
+
+func debugLog(v ...interface{}) {
+	if *isDebug {
+		log.Println(v...)
+	}
+}

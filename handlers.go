@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -32,18 +31,18 @@ func createRouter() *mux.Router {
 	web := r.Methods("GET").Subrouter()
 	// Any GET request to the /api/ route will serve up the docs static site directly.
 	web.PathPrefix("/api").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(os.Stdout, "docs - %v\n", req.URL)
+		debugLog("docs -", req.URL)
 		// TODO: This is wrong, will fix when we actually have the files to serve
 		http.ServeFile(w, req, "docs/build/")
 	})
 	// Any GET request to the /static/ route will serve the files in the static dir directly.
 	web.PathPrefix("/static/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(os.Stdout, "static - %v\n", req.URL)
+		debugLog("static -", req.URL)
 		http.ServeFile(w, req, req.URL.Path[1:])
 	})
 	// All other GET requests will serve up the Angular app at static/index.html
 	web.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(os.Stdout, "web - %v\n", req.URL)
+		debugLog("web -", req.URL)
 		http.ServeFile(w, req, "static/index.html")
 	})
 	return r
@@ -51,7 +50,7 @@ func createRouter() *mux.Router {
 
 // Creates a new bin
 func createHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
+	debugLog("create -", r.URL)
 
 	// Get a new name
 	n, err := randomString(config.NameLength)
@@ -95,7 +94,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 
 // View a bin
 func binHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "bin - %v\n", r.URL)
+	debugLog("bin -", r.URL)
 	name := mux.Vars(r)["name"]
 
 	exists, err := nameExists(name)
@@ -140,7 +139,7 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 
 // Get bin history
 func historyHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "history - %v\n", r.URL)
+	debugLog("history -", r.URL)
 	name := mux.Vars(r)["name"]
 	exists, err := nameExists(name)
 	if err != nil {
@@ -181,7 +180,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 
 // Web socket connections
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(os.Stdout, "create - %v\n", r.URL)
+	debugLog("create -", r.URL)
 	// upgrade the connection
 	binName := mux.Vars(r)["name"]
 
