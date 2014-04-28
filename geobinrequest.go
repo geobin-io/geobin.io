@@ -56,6 +56,9 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 	return &gr
 }
 
+// parse curries the parsing work off to parseObject or parseArray as needed depending
+// on the type of 'b' and signals to the WaitGroup when it has finished. This method
+// is recursive and is called from both parseObject and parseArray when necessary.
 func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 	switch t := b.(type) {
 	case []interface{}:
@@ -66,6 +69,9 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 	gr.wg.Done()
 }
 
+// parseObject checks to see if the given map is GeoJSON or has geo data at the top level.
+// If the map has neither of those, then parseObject will iterate through the top level keys
+// sending them back up to `parse` in a new goroutine.
 func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
 		o["geobinRequestPath"] = kp
@@ -82,6 +88,7 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 	}
 }
 
+// parseArray iterates over the given array calling `parse` with the item in a new goroutine.
 func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 	for i, o := range a {
 		kp = append(kp, i)
