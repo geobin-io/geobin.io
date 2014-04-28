@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	gj "github.com/kpawlik/geojson"
@@ -19,8 +20,10 @@ type GeobinRequest struct {
 	c         chan map[string]interface{}
 }
 
-// NewGeobinRequest creates and new GeobinRequest with the given timestamp,
-// headers, and body
+// NewGeobinRequest creates a new GeobinRequest with the given timestamp,
+// headers, and body. It will search the given body for the presence of
+// any geo data and fill the returned GeobinRequest's Geo property with
+// an array of geoJSON objects using said geo data.
 func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *GeobinRequest {
 	gr := GeobinRequest{
 		Timestamp: timestamp,
@@ -37,7 +40,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 	}
 
 	gr.wg.Add(1)
-	go gr.parse(js)
+	go gr.parse(js, make([]interface{}, 0))
 	go func() {
 		for {
 			geo, ok := <-gr.c
@@ -51,65 +54,108 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 	gr.wg.Wait()
 	close(gr.c)
 
-	/*
-		// If we didn't find any geojson search for any coordinates in the body.
-		if false {
-			// TODO: Look for Lat/Lng (and Distance) keys, create geojson Features for each of them
-			// placing any additional data near those keys in the properties key.
-			// The code below is just my initial lat/long detection code: needs improvement
-			latRegex := regexp.MustCompile(`.*(?:lat(?:itude)?|y)(?:")*: ?([0-9.-]*)`)
-			lngRegex := regexp.MustCompile(`.*(?:lo?ng(?:itude)?|x)(?:")*: ?([0-9.-]*)`)
-
-			var lat, lng float64
-			var foundLat, foundLng bool
-			bStr := string(b)
-			if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
-				lat, _ = strconv.ParseFloat(latMatches[1], 64)
-				foundLat = true
-			}
-
-			if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
-				lng, _ = strconv.ParseFloat(lngMatches[1], 64)
-				foundLng = true
-			}
-
-			if foundLat && foundLng {
-				p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
-				pstr, _ := gj.Marshal(p)
-				json.Unmarshal([]byte(pstr), &gr.Geo)
-			}
-		}
-	*/
-
 	return &gr
 }
 
-func (gr *GeobinRequest) parse(b interface{}) {
+func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 	switch t := b.(type) {
 	case []interface{}:
-		gr.parseArray(t)
+		gr.parseArray(t, kp)
 	case map[string]interface{}:
-		gr.parseObject(t)
+		gr.parseObject(t, kp)
 	}
 	gr.wg.Done()
 }
 
-func (gr *GeobinRequest) parseObject(o map[string]interface{}) {
+func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
+		o["geobinRequestPath"] = kp
 		gr.c <- o
-	} else if isOtherGeo(o) {
+	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
+		geo["geobinRequestPath"] = kp
+		gr.c <- geo
 	} else {
-		for _, v := range o {
+		for k, v := range o {
+			kp = append(kp, k)
 			gr.wg.Add(1)
-			go gr.parse(v)
+			go gr.parse(v, kp)
 		}
 	}
 }
 
-func isOtherGeo(o map[string]interface{}) bool {
-	return false
+func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
+	for i, o := range a {
+		kp = append(kp, i)
+		gr.wg.Add(1)
+		go gr.parse(o, kp)
+	}
 }
 
+// isOtherGeo searches for non-standard geo data in the given json map. It looks for the presence
+// of lat/lng (and a few variations thereof) or x/y values in the object as well as a distance/radius/accuracy
+// field and creates a geojson point out of it and returns that, along with a boolean value
+// representing whether or not it found any geo data in the object. It will also look for
+// any keys that hold an array of two numbers with a key name that suggests that it might
+// be a lng/lat array.
+//
+// The following keys will be detected as Latitude:
+//	"lat", "latitude"
+//	"y"
+//
+// The following keys will be detected as Longitude:
+//	"lng", "long", "longitude"
+//	"x"
+//
+// The following keys will be used to fill the "geobinRadius" property of the resulting geojson:
+//	"dist", "distance"
+//	"rad", "radius"
+//	"acc", "accuracy"
+//
+// The following keys will be searched for a long/lat pair:
+//	"geo"
+//	"loc" or "location"
+//	"coord", "coords", "coordinate" or "coordinates"
+func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
+	var foundLat, foundLng, foundDst bool
+	var lat, lng, dst float64
+
+	for k, v := range o {
+		switch strings.ToLower(k) {
+		case "lat", "latitude", "y":
+			lat, foundLat = v.(float64)
+		case "lng", "long", "longitude", "x":
+			lng, foundLng = v.(float64)
+		case "dst", "dist", "distance", "rad", "radius", "acc", "accuracy":
+			dst, foundDst = v.(float64)
+		case "geo", "loc", "location", "coord", "coordinate", "coords", "coordinates":
+			g, ok := v.([]float64)
+			if !ok || len(g) != 2 {
+				break
+			}
+
+			lng = g[0]
+			lat = g[1]
+			foundLat, foundLng = true, true
+		}
+	}
+
+	if foundLat && foundLng {
+		p := gj.NewPoint(gj.Coordinate{gj.CoordType(lng), gj.CoordType(lat)})
+		pstr, _ := gj.Marshal(p)
+		var geo map[string]interface{}
+		json.Unmarshal([]byte(pstr), &geo)
+		if foundDst {
+			geo["geobinRadius"] = dst
+		}
+		fmt.Fprintln(os.Stdout, "Found other geo:", geo)
+		return true, geo
+	}
+
+	return false, nil
+}
+
+// isGeojson detects whether or not the given json map is valid GeoJSON and
+// returns a boolean reflecting its findings.
 func isGeojson(js map[string]interface{}) bool {
 	t, ok := js["type"]
 	unmarshal := func(buf []byte, target interface{}) (e error) {
@@ -188,12 +234,5 @@ func isGeojson(js map[string]interface{}) bool {
 	default:
 		fmt.Fprintln(os.Stdout, "Unknown geo type:", t)
 		return false
-	}
-}
-
-func (gr *GeobinRequest) parseArray(a []interface{}) {
-	for _, o := range a {
-		gr.wg.Add(1)
-		go gr.parse(o)
 	}
 }
