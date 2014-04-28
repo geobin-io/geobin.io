@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
+	"strings"
 	"sync"
 
 	gj "github.com/kpawlik/geojson"
@@ -117,47 +116,27 @@ func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 //	"loc" or "location"
 //	"coord", "coords", "coordinate" or "coordinates"
 func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
-	latRegex := regexp.MustCompile(`['"](?:lat(?:itude)?|y)['"]: ?(-?[0-9]+\.?[0-9]*)[,\n ]`)
-	lngRegex := regexp.MustCompile(`['"](?:lo?ng(?:itude)?|x)['"]: ?(-?[0-9]+\.?[0-9]*)[,\n ]`)
-	dstRegex := regexp.MustCompile(`['"](?:dist(?:ance)?|(?:rad(?:ius)?)|(?:acc(?:uracy)?))['"]: ?([0-9]+\.?[0-9]*)[,\n ]`)
-	geoRegex := regexp.MustCompile(`['"](?:geo|loc(?:ation)?|coord(?:inate)?s?)['"]: ?\[(-?[0-9]+\.?[0-9]*), (-?[0-9]+\.?[0-9]*)]`)
-
-	b, err := json.Marshal(o)
-	if err != nil {
-		return false, nil
-	}
-
 	var foundLat, foundLng, foundDst bool
 	var lat, lng, dst float64
-	bStr := string(b)
 
-	if latMatches := latRegex.FindStringSubmatch(bStr); latMatches != nil {
-		if lat, err = strconv.ParseFloat(latMatches[1], 64); err == nil {
-			foundLat = true
-		}
-	}
-
-	if lngMatches := lngRegex.FindStringSubmatch(bStr); lngMatches != nil {
-		if lng, err = strconv.ParseFloat(lngMatches[1], 64); err == nil {
-			foundLng = true
-		}
-	}
-
-	if !foundLat && !foundLng {
-		// Look for a set of coordinates (in long/lat or x/y order)
-		if geoMatches := geoRegex.FindStringSubmatch(bStr); geoMatches != nil {
-			if lng, err = strconv.ParseFloat(geoMatches[1], 64); err == nil {
-				if lat, err = strconv.ParseFloat(geoMatches[2], 64); err == nil {
-					foundLat = true
-					foundLng = true
-				}
+	for k, v := range o {
+		switch strings.ToLower(k) {
+		case "lat", "latitude", "y":
+			lat, foundLat = v.(float64)
+		case "lng", "long", "longitude", "x":
+			lng, foundLng = v.(float64)
+		case "dst", "dist", "distance", "rad", "radius", "acc", "accuracy":
+			dst, foundDst = v.(float64)
+		case "geo", "loc", "location", "coord", "coordinate", "coords", "coordinates":
+			g, ok := v.([]float64)
+			if !ok || len(g) != 2 {
+				break
 			}
-		}
-	}
 
-	if dstMatches := dstRegex.FindStringSubmatch(bStr); dstMatches != nil {
-		dst, _ = strconv.ParseFloat(dstMatches[1], 64)
-		foundDst = true
+			lng = g[0]
+			lat = g[1]
+			foundLat, foundLng = true, true
+		}
 	}
 
 	if foundLat && foundLng {

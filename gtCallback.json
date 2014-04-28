@@ -1,0 +1,90 @@
+{
+  "triggeredAt": {
+    "iso8601": "2014-04-26T22:39:40.355+00:00",
+    "unix": 1398551980
+  },
+  "trigger": {
+    "triggerId": "Barista",
+    "condition": {
+      "direction": "enter",
+      "geo": {
+        "type": "Point",
+        "coordinates": [-122.77545711249113, 45.41986460661744]
+      }
+    },
+    "action": {
+      "callbackUrl": "http://geobin.valis.pw/debug",
+      "notification": {
+        "text": "coffee time"
+      }
+    },
+    "times": 0,
+    "rateLimit": 0,
+    "tags": [
+      {
+      "name": "trigger:Barista",
+      "deviceTagging": true,
+      "deviceLocation": false,
+      "deviceToken": false,
+      "deviceList": false,
+      "triggerApply": true,
+      "triggerUpdate": true,
+      "triggerDelete": true,
+      "triggerList": true,
+      "triggerHistory": true,
+      "discoverable": false
+    },
+    {
+      "name": "test",
+      "deviceTagging": true,
+      "deviceLocation": false,
+      "deviceToken": false,
+      "deviceList": false,
+      "triggerApply": true,
+      "triggerUpdate": true,
+      "triggerDelete": true,
+      "triggerList": true,
+      "triggerHistory": true,
+      "discoverable": false
+    }
+    ]
+  },
+  "device": {
+    "deviceId": "CzluaPdV41St2o5S",
+    "tags": [
+      {
+      "name": "device:CzluaPdV41St2o5S",
+      "deviceTagging": false,
+      "deviceLocation": false,
+      "deviceToken": false,
+      "deviceList": false,
+      "triggerApply": true,
+      "triggerUpdate": true,
+      "triggerDelete": true,
+      "triggerList": true,
+      "triggerHistory": true,
+      "discoverable": false
+    },
+    {
+      "name": "test",
+      "deviceTagging": true,
+      "deviceLocation": false,
+      "deviceToken": false,
+      "deviceList": false,
+      "triggerApply": true,
+      "triggerUpdate": true,
+      "triggerDelete": true,
+      "triggerList": true,
+      "triggerHistory": true,
+      "discoverable": false
+    }
+    ]
+  },
+  "location": {
+    "latitude": 45.51986460661744,
+    "longitude": -122.67545711249113,
+    "accuracy": 8,
+    "trackingProfile": "adaptive",
+    "timestamp": "2014-04-26T22:39:26.513+00:00"
+  }
+}
