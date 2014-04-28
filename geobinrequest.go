@@ -81,9 +81,8 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 		gr.c <- geo
 	} else {
 		for k, v := range o {
-			kp = append(kp, k)
 			gr.wg.Add(1)
-			go gr.parse(v, kp)
+			go gr.parse(v, append(kp, k))
 		}
 	}
 }
@@ -91,9 +90,8 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 // parseArray iterates over the given array calling `parse` with the item in a new goroutine.
 func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 	for i, o := range a {
-		kp = append(kp, i)
 		gr.wg.Add(1)
-		go gr.parse(o, kp)
+		go gr.parse(o, append(kp, i))
 	}
 }
 
@@ -109,7 +107,7 @@ func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 //	"y"
 //
 // The following keys will be detected as Longitude:
-//	"lng", "long", "longitude"
+//	"lng", "lon", "long", "longitude"
 //	"x"
 //
 // The following keys will be used to fill the "geobinRadius" property of the resulting geojson:
@@ -139,8 +137,7 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 				break
 			}
 
-			lng = g[0]
-			lat = g[1]
+			lng, lat = g[0], g[1]
 			foundLat, foundLng = true, true
 		}
 	}
