@@ -1,11 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"runtime"
 	"time"
 
@@ -18,9 +18,11 @@ var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
 var socketManager = manager.NewManager(make(map[string]map[string]socket.S))
+var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 
 // starts the redis pump and http server
 func main() {
+	flag.Parse()
 	// set numprocs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	// add file info to log statements
@@ -44,7 +46,7 @@ func main() {
 	}()
 
 	// Start up HTTP server
-	fmt.Fprintf(os.Stdout, "Starting server at %v:%d\n", config.Host, config.Port)
+	log.Println("Starting server at", config.Host, config.Port)
 	err := http.ListenAndServe(fmt.Sprintf("%v:%d", config.Host, config.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
