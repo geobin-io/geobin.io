@@ -129,7 +129,7 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 		switch strings.ToLower(k) {
 		case "lat", "latitude", "y":
 			lat, foundLat = v.(float64)
-		case "lng", "long", "longitude", "x":
+		case "lng", "lon", "long", "longitude", "x":
 			lng, foundLng = v.(float64)
 		case "dst", "dist", "distance", "rad", "radius", "acc", "accuracy":
 			dst, foundDst = v.(float64)
