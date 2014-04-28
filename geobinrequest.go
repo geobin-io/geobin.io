@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"sync"
 
@@ -158,7 +159,7 @@ func isGeojson(js map[string]interface{}) bool {
 	t, ok := js["type"]
 	unmarshal := func(buf []byte, target interface{}) (e error) {
 		if e = json.Unmarshal(buf, target); e != nil {
-			debugLog("Couldn't unmarshal", t, "to geojson:", e)
+			log.Println("Couldn't unmarshal", t, "to geojson:", e)
 		}
 		return
 	}
