@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"math/rand"
-
-	"github.com/geoloqi/geobin-go/socket"
 )
 
 // randomString returns a random string with the given length
@@ -37,15 +35,6 @@ func nameExists(name string) (bool, error) {
 	}
 
 	return resp.Val(), nil
-}
-
-// manageSockets provides threadsafe access to the map of websockets
-func manageSockets(sf func(sockets map[string]map[string]socket.S)) {
-	socketManager.Touch(func(o interface{}) {
-		if sockets, ok := o.(map[string]map[string]socket.S); ok {
-			sf(sockets)
-		}
-	})
 }
 
 func debugLog(v ...interface{}) {

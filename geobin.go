@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/geoloqi/geobin-go/manager"
 	"github.com/geoloqi/geobin-go/socket"
 	redis "github.com/vmihailenco/redis/v2"
 )
@@ -17,7 +16,10 @@ import (
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var socketManager = manager.NewManager(make(map[string]map[string]socket.S))
+var socketMap = &SocketMap{
+	Map:    make(map[string]map[string]socket.S),
+	PubSub: pubsub,
+}
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 
 // starts the redis pump and http server
@@ -79,22 +81,7 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			var sockMap map[string]socket.S
-			var ok bool
-			manageSockets(func(sockets map[string]map[string]socket.S) {
-				sockMap, ok = sockets[v.Channel]
-			})
-
-			if !ok {
-				log.Println("Got message for unknown channel:", v.Channel)
-				return
-			}
-
-			for _, sock := range sockMap {
-				go func(s socket.S, p []byte) {
-					s.Write(p)
-				}(sock, []byte(v.Payload))
-			}
+			socketMap.Send(v.Channel, []byte(v.Payload))
 		}
 	}
 }
