@@ -4,13 +4,10 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/kr/pretty"
 )
-
-var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
 func init() {
 	// make the default for isDebug be true when running tests. If you run `go test -debug=false`
