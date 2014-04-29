@@ -204,20 +204,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		ids := strings.Split(socketName, "~br~")
 		bn := ids[0]
 		suuid := ids[1]
-
-		manageSockets(func(sockets map[string]map[string]socket.S) {
-			socks, ok := sockets[bn]
-			if ok {
-				delete(socks, suuid)
-
-				if len(socks) == 0 {
-					delete(sockets, bn)
-					if err := pubsub.Unsubscribe(bn); err != nil {
-						log.Println("Failure to UNSUBSCRIBE from", bn, err)
-					}
-				}
-			}
-		})
+		socketMap.Delete(bn, suuid)
 	})
 
 	if err != nil {
@@ -228,10 +215,5 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// keep track of the outbound channel for pubsubbery
-	go manageSockets(func(sockets map[string]map[string]socket.S) {
-		if _, ok := sockets[binName]; !ok {
-			sockets[binName] = make(map[string]socket.S)
-		}
-		sockets[binName][uuid] = s
-	})
+	socketMap.Add(binName, uuid, s)
 }
