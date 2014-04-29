@@ -1,11 +1,11 @@
 package main
 
 import (
-	"testing"
-
 	"encoding/json"
+	"io/ioutil"
 	"reflect"
 	"strings"
+	"testing"
 
 	"github.com/kr/pretty"
 )
@@ -204,5 +204,14 @@ func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 }
 
 func TestGTCallbackRequest(t *testing.T) {
-	// TODO: use gtCallback.json file!
+	js, err := ioutil.ReadFile("gtCallback.json")
+	if err != nil {
+		t.Error("Error reading gtCallback.json. ", err)
+		return
+	}
+
+	expJs := `[{"type": "Point", "coordinates": [-122.67545711249113, 45.51986460661744], "geobinRadius": 8, "geobinRequestPath": ["location"]},
+	           {"type": "Point", "coordinates": [-122.77545711249113, 45.41986460661744], "geobinRequestPath": ["trigger", "condition", "geo"]}]`
+
+	runTest(string(js), expJs, t)
 }
