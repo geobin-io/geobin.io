@@ -1,9 +1,14 @@
 package main
 
-import "testing"
-import "encoding/json"
-import "strings"
-import "reflect"
+import (
+	"testing"
+
+	"encoding/json"
+	"reflect"
+	"strings"
+
+	"github.com/kr/pretty"
+)
 
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 
@@ -35,8 +40,14 @@ func runTest(src string, expected string, t *testing.T) {
 	}
 
 	gr := NewGeobinRequest(0, nil, []byte(src))
-	if !reflect.DeepEqual(exp, gr.Geo) {
-		t.Errorf("Expected:\n%v\nGot:\n%v", exp, gr.Geo[0])
+	// convert gr.Geo to json, and back to avoid funky type differences (int vs float) and to
+	// test gr.Geo as it will be seen by the client.
+	var res []interface{}
+	resB, _ := json.Marshal(gr.Geo)
+	json.Unmarshal(resB, &res)
+	if !reflect.DeepEqual(exp, res) {
+		pretty.Logf("Expected:\n%# v,\nGot:\n%# v", exp, res)
+		t.Fail()
 		return
 	}
 }
@@ -141,21 +152,55 @@ func TestRequestWithGJFeatureCollection(t *testing.T) {
 }
 
 func TestRequestWithNonGJPoint(t *testing.T) {
-	src := `{ "foo": "bar", "lat": 40, "lng": -40}`
+	src := `{
+		"foo": "bar",
+		"lat": 10,
+		"lng": -10
+	}`
 	exp := `[{
 		"type": "Point",
-		"coordinates": [-40, 40],
+		"coordinates": [-10, 10],
 		"geobinRequestPath": []
 	}]`
 	runTest(src, exp, t)
 }
 
 func TestRequestWithNonGJPoints(t *testing.T) {
-	// TODO:
+	src := `[{
+		"foo": "bar",
+		"lat": 10,
+		"lng": -10
+	}, {
+		"foo": "baz",
+		"x": -20,
+		"y": 20
+	}]`
+	exp := `[{
+		"type": "Point",
+		"coordinates": [-10, 10],
+		"geobinRequestPath": [0]
+	}, {
+		"type": "Point",
+		"coordinates": [-20, 20],
+		"geobinRequestPath": [1]
+	}]`
+	runTest(src, exp, t)
 }
 
 func TestRequestwithNonGJPointAndRadius(t *testing.T) {
-	// TODO:
+	src := `{
+		"foo": "bar",
+		"lat": 10,
+		"lng": -10,
+		"rad": 10
+	}`
+	exp := `[{
+		"type": "Point",
+		"coordinates": [-10, 10],
+		"geobinRequestPath": [],
+		"geobinRadius": 10
+	}]`
+	runTest(src, exp, t)
 }
 
 func TestGTCallbackRequest(t *testing.T) {
