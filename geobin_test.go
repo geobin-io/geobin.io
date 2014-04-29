@@ -102,17 +102,17 @@ func TestRequestWithGJMultiPolygon(t *testing.T) {
 func TestRequestWithGJGeometryCollection(t *testing.T) {
 	js := `{
 		"type": "GeometryCollection",
-    "geometries": [
-      {
-        "coordinates": [100, 0],
-				"type": "Point"
-			},
-      {
-        "coordinates": [ [101, 0], [102, 1] ],
-				"type": "LineString"
-			}
-    ]
-  }`
+		"geometries": [
+		{
+			"coordinates": [100, 0],
+					"type": "Point"
+				},
+		{
+			"coordinates": [ [101, 0], [102, 1] ],
+					"type": "LineString"
+				}
+		]
+	}`
 	runSingleObjectTest(js, t)
 }
 
@@ -185,6 +185,48 @@ func TestRequestWithNonGJPoints(t *testing.T) {
 		"geobinRequestPath": [1]
 	}]`
 	runTest(src, exp, t)
+}
+
+// Ensure that we find lat and long values for all of the variations of the
+// key name
+func TestRequestWithNonGJLatLngKeys(t *testing.T) {
+	latKeys := []string{"lat", "latitude", "y"}
+	lngKeys := []string{"lng", "lon", "long", "longitude", "x"}
+
+	// For every combination of latKeys and lngKeys, we expect the same result
+	exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRequestPath": []}]`
+	for _, latKey := range latKeys {
+		for _, lngKey := range lngKeys {
+			src := `{"` + latKey + `": 10, "` + lngKey + `": -10}`
+			runTest(src, exp, t)
+		}
+	}
+}
+
+// Ensure that we find dist values for all variations of the key name
+func TestRequestWithNonGJDistKeys(t *testing.T) {
+	distKeys := []string{"dst", "dist", "distance", "rad", "radius", "acc", "accuracy"}
+
+	// For each distKey, we expect the same result
+	exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRadius": 5, "geobinRequestPath": []}]`
+	for _, distKey := range distKeys {
+		src := `{"lat": 10, "lng": -10, "` + distKey + `": 5}`
+		runTest(src, exp, t)
+	}
+
+}
+
+// Ensure that we find geo objects for all variations of the key name.
+// Also ensures that the geobinRequestPath is correct in all cases.
+func TestRequestWithNonGJGeoKeys(t *testing.T) {
+	geoKeys := []string{"geo", "loc", "location", "coord", "coordinate", "coords", "coordinates"}
+
+	// For each geoKey, we expect the same coordinates, with geobinRequestPath = [geoKey]
+	for _, geoKey := range geoKeys {
+		exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRequestPath": ["` + geoKey + `"]}]`
+		src := `{"` + geoKey + `": {"lat": 10, "lng": -10}}`
+		runTest(src, exp, t)
+	}
 }
 
 func TestRequestwithNonGJPointAndRadius(t *testing.T) {
