@@ -179,9 +179,11 @@ func TestRequestWithNestedGeoJSON(t *testing.T) {
 		}
 	}`
 	exp := `[{
-		"type": "Point",
-		"coordinates": [10, -10],
-		"geobinRequestPath": ["data", "properties", "geo"]
+		"geo": {
+			"type": "Point",
+			"coordinates": [10, -10]
+		},
+		"path": ["data", "properties", "geo"]
 	}]`
 	runTest(src, exp, t)
 }
