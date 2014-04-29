@@ -18,6 +18,36 @@ func init() {
 	*isDebug = true
 }
 
+// runTest takes an input json string (src) and the expected output string (expected). It creates
+// a GeobinRequest using the input string and tests that the GeobinRequest's Geo property,
+// once marshaled to json is the same as the result of marshaling the `expected` json string.
+// Note that expected should be marshalable to []interface{}, as that is what GeobinRequest.Geo
+// will be.
+func runTest(src string, expected string, t *testing.T) {
+	var exp []interface{}
+	if err := json.Unmarshal([]byte(expected), &exp); err != nil {
+		t.Error(err)
+		return
+	}
+
+	gr := NewGeobinRequest(0, nil, []byte(src))
+
+	// convert gr.Geo to json, and back to avoid funky type differences (int vs float) and to
+	// test gr.Geo as it will be seen by the client.
+	var res []interface{}
+	resB, _ := json.Marshal(gr.Geo)
+	json.Unmarshal(resB, &res)
+
+	if !reflect.DeepEqual(exp, res) {
+		pretty.Logf("Expected:\n%# v,\nGot:\n%# v", exp, res)
+		t.Fail()
+		return
+	}
+}
+
+// runSingleObjectTest is a wrapper function for runTest. It takes an input json string and
+// generates the expected output parameter for runTest by unmarshaling the input and setting
+// the geobinRequestPath as expected for an object that is the root of the request body.
 func runSingleObjectTest(src string, t *testing.T) {
 	// make expected geo
 	var geo map[string]interface{}
@@ -34,26 +64,6 @@ func runSingleObjectTest(src string, t *testing.T) {
 	exp, _ := json.Marshal(expSlice)
 
 	runTest(src, string(exp), t)
-}
-
-func runTest(src string, expected string, t *testing.T) {
-	var exp []interface{}
-	if err := json.Unmarshal([]byte(expected), &exp); err != nil {
-		t.Error(err)
-		return
-	}
-
-	gr := NewGeobinRequest(0, nil, []byte(src))
-	// convert gr.Geo to json, and back to avoid funky type differences (int vs float) and to
-	// test gr.Geo as it will be seen by the client.
-	var res []interface{}
-	resB, _ := json.Marshal(gr.Geo)
-	json.Unmarshal(resB, &res)
-	if !reflect.DeepEqual(exp, res) {
-		pretty.Logf("Expected:\n%# v,\nGot:\n%# v", exp, res)
-		t.Fail()
-		return
-	}
 }
 
 func TestRequestWithGJPoint(t *testing.T) {
