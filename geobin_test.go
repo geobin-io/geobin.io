@@ -66,6 +66,8 @@ func runSingleObjectTest(src string, t *testing.T) {
 	runTest(src, string(exp), t)
 }
 
+// GeoJSON Tests
+
 func TestRequestWithGJPoint(t *testing.T) {
 	runSingleObjectTest(`{ "type": "Point", "coordinates": [100, 0] }`, t)
 }
@@ -164,6 +166,30 @@ func TestRequestWithGJFeatureCollection(t *testing.T) {
 	}`
 	runSingleObjectTest(js, t)
 }
+
+func TestRequestWithNestedGeoJSON(t *testing.T) {
+	src := `{
+		"foo": "bar",
+		"data": {
+			"foo": "baz",
+			"properties": {
+				"geo": {
+					"type": "Point",
+					"coordinates": [10, -10]
+				},
+				"someOtherProperty": "with some other value"
+			}
+		}
+	}`
+	exp := `[{
+		"type": "Point",
+		"coordinates": [10, -10],
+		"geobinRequestPath": ["data", "properties", "geo"]
+	}]`
+	runTest(src, exp, t)
+}
+
+// Other Geo Tests
 
 func TestRequestWithNonGJPoint(t *testing.T) {
 	src := `{
