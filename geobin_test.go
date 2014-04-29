@@ -6,7 +6,6 @@ import "strings"
 import "reflect"
 
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
-var emptyPath = make([]interface{}, 0)
 
 func init() {
 	// make the default for isDebug be true when running tests. If you run `go test -debug=false`
@@ -14,29 +13,40 @@ func init() {
 	*isDebug = true
 }
 
-func runTest(js string, reqPath []interface{}, t *testing.T) {
-	gr := NewGeobinRequest(0, nil, []byte(js))
-	var jsMap map[string]interface{}
-	if err := json.Unmarshal([]byte(js), &jsMap); err != nil {
+func runSingleObjectTest(src string, t *testing.T) {
+	// make expected string
+	var expected map[string]interface{}
+	if err := json.Unmarshal([]byte(src), &expected); err != nil {
 		t.Error(err)
 		return
 	}
-	if reqPath == nil {
-		reqPath = emptyPath
+	expected["geobinRequestPath"] = make([]interface{}, 0)
+	expSlice := []map[string]interface{}{expected}
+	exp, _ := json.Marshal(expSlice)
+
+	runTest(src, string(exp), t)
+}
+
+func runTest(src string, expected string, t *testing.T) {
+	var exp []interface{}
+	if err := json.Unmarshal([]byte(expected), &exp); err != nil {
+		t.Error(err)
+		return
 	}
-	jsMap["geobinRequestPath"] = reqPath
-	if !reflect.DeepEqual(jsMap, gr.Geo[0]) {
-		t.Errorf("Exp %v, (type %v)\nGot %v (type %v)", jsMap, reflect.TypeOf(jsMap), gr.Geo[0], reflect.TypeOf(gr.Geo))
+
+	gr := NewGeobinRequest(0, nil, []byte(src))
+	if !reflect.DeepEqual(exp, gr.Geo) {
+		t.Errorf("Expected:\n%v\nGot:\n%v", exp, gr.Geo[0])
 		return
 	}
 }
 
 func TestRequestWithGJPoint(t *testing.T) {
-	runTest(`{ "type": "Point", "coordinates": [100, 0] }`, nil, t)
+	runSingleObjectTest(`{ "type": "Point", "coordinates": [100, 0] }`, t)
 }
 
 func TestRequestWithGJLineString(t *testing.T) {
-	runTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, nil, t)
+	runSingleObjectTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, t)
 }
 
 func TestRequestWithGJPolygon(t *testing.T) {
@@ -54,8 +64,8 @@ func TestRequestWithGJPolygon(t *testing.T) {
 		]
 	}`
 
-	runTest(jsNoHoles, nil, t)
-	runTest(jsHoles, nil, t)
+	runSingleObjectTest(jsNoHoles, t)
+	runSingleObjectTest(jsHoles, t)
 }
 
 func TestRequestWithGJMultiPoint(t *testing.T) {
@@ -63,7 +73,7 @@ func TestRequestWithGJMultiPoint(t *testing.T) {
 		"type": "MultiPoint",
 		"coordinates": [ [100, 0], [101, 1] ]
 	}`
-	runTest(js, nil, t)
+	runSingleObjectTest(js, t)
 }
 
 func TestRequestWithGJMultiPolygon(t *testing.T) {
@@ -75,7 +85,7 @@ func TestRequestWithGJMultiPolygon(t *testing.T) {
 			[[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]
 		]
 	}`
-	runTest(js, nil, t)
+	runSingleObjectTest(js, t)
 }
 
 func TestRequestWithGJGeometryCollection(t *testing.T) {
@@ -92,7 +102,7 @@ func TestRequestWithGJGeometryCollection(t *testing.T) {
 			}
     ]
   }`
-	runTest(js, nil, t)
+	runSingleObjectTest(js, t)
 }
 
 func TestRequestWithGJFeature(t *testing.T) {
@@ -107,7 +117,7 @@ func TestRequestWithGJFeature(t *testing.T) {
 			"foo": "bar"
 		}
 	}`
-	runTest(js, nil, t)
+	runSingleObjectTest(js, t)
 }
 
 func TestRequestWithGJFeatureCollection(t *testing.T) {
@@ -127,11 +137,17 @@ func TestRequestWithGJFeatureCollection(t *testing.T) {
 			}
 		]
 	}`
-	runTest(js, nil, t)
+	runSingleObjectTest(js, t)
 }
 
 func TestRequestWithNonGJPoint(t *testing.T) {
-	// TODO:
+	src := `{ "foo": "bar", "lat": 40, "lng": -40}`
+	exp := `[{
+		"type": "Point",
+		"coordinates": [-40, 40],
+		"geobinRequestPath": []
+	}]`
+	runTest(src, exp, t)
 }
 
 func TestRequestWithNonGJPoints(t *testing.T) {
