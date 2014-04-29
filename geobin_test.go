@@ -1,9 +1,12 @@
 package main
 
-import "testing"
-import "encoding/json"
-import "strings"
-import "reflect"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"reflect"
+	"strings"
+	"testing"
+)
 
 var r = strings.NewReplacer(" ", "", "\n", "", "\t", "")
 var emptyPath = make([]interface{}, 0)
@@ -143,5 +146,30 @@ func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 }
 
 func TestGTCallbackRequest(t *testing.T) {
-	// TODO: use gtCallback.json file!
+	js, err := ioutil.ReadFile("gtCallback.json")
+	if err != nil {
+		t.Error("Error reading gtCallback.json. ", err)
+		return
+	}
+
+	gr := NewGeobinRequest(0, nil, js)
+
+	var jsMap map[string]interface{}
+	if err := json.Unmarshal(js, &jsMap); err != nil {
+		t.Error(err)
+		return
+	}
+
+	expJs := `[{"type": "Point", "coordinates": [-122.67545711249113, 45.51986460661744], "geobinRadius": 8, "geobinRequestPath": ["location"]},
+	           {"type": "Point", "coordinates": [-122.77545711249113, 45.41986460661744], "geobinRequestPath": ["trigger", "condition", "geo"]}]`
+	var exp []interface{}
+	if err := json.Unmarshal([]byte(expJs), &exp); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if !reflect.DeepEqual(exp, gr.Geo) {
+		t.Errorf("\nExp: %v\nGot: %v", exp, gr.Geo)
+		return
+	}
 }
