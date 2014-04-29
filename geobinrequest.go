@@ -14,9 +14,15 @@ type GeobinRequest struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
-	Geo       []interface{}     `json:"geo,omitempty"`
+	Geo       []Geo             `json:"geo,omitempty"`
 	wg        *sync.WaitGroup
-	c         chan map[string]interface{}
+	c         chan *Geo
+}
+
+type Geo struct {
+	Geo    map[string]interface{} `json:"geo"`
+	Radius float64                `json:"radius,omitempty"`
+	Path   []interface{}          `json:"path"`
 }
 
 // NewGeobinRequest creates a new GeobinRequest with the given timestamp,
@@ -28,8 +34,9 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		Timestamp: timestamp,
 		Headers:   headers,
 		Body:      string(body),
+		Geo:       make([]Geo, 0),
 		wg:        &sync.WaitGroup{},
-		c:         make(chan map[string]interface{}),
+		c:         make(chan *Geo),
 	}
 
 	var js interface{}
@@ -47,7 +54,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 				return
 			}
 
-			gr.Geo = append(gr.Geo, geo)
+			gr.Geo = append(gr.Geo, *geo)
 		}
 	}()
 	gr.wg.Wait()
@@ -74,10 +81,13 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 // sending them back up to `parse` in a new goroutine.
 func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
-		o["geobinRequestPath"] = kp
-		gr.c <- o
+		g := &Geo{
+			Path: kp,
+			Geo:  o,
+		}
+		gr.c <- g
 	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
-		geo["geobinRequestPath"] = kp
+		geo.Path = kp
 		gr.c <- geo
 	} else {
 		for k, v := range o {
@@ -110,7 +120,7 @@ func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 //	"lng", "lon", "long", "longitude"
 //	"x"
 //
-// The following keys will be used to fill the "geobinRadius" property of the resulting geojson:
+// The following keys will be used to fill the "radius" property of the resulting geojson:
 //	"dist", "distance"
 //	"rad", "radius"
 //	"acc", "accuracy"
@@ -119,7 +129,7 @@ func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 //	"geo"
 //	"loc" or "location"
 //	"coord", "coords", "coordinate" or "coordinates"
-func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
+func isOtherGeo(o map[string]interface{}) (bool, *Geo) {
 	var foundLat, foundLng, foundDst bool
 	var lat, lng, dst float64
 
@@ -147,11 +157,14 @@ func isOtherGeo(o map[string]interface{}) (bool, map[string]interface{}) {
 		pstr, _ := gj.Marshal(p)
 		var geo map[string]interface{}
 		json.Unmarshal([]byte(pstr), &geo)
-		if foundDst {
-			geo["geobinRadius"] = dst
-		}
 		debugLog("Found other geo:", geo)
-		return true, geo
+		g := &Geo{
+			Geo: geo,
+		}
+		if foundDst {
+			g.Radius = dst
+		}
+		return true, g
 	}
 
 	return false, nil

@@ -19,13 +19,17 @@ func init() {
 }
 
 func runSingleObjectTest(src string, t *testing.T) {
-	// make expected string
-	var expected map[string]interface{}
-	if err := json.Unmarshal([]byte(src), &expected); err != nil {
+	// make expected geo
+	var geo map[string]interface{}
+	if err := json.Unmarshal([]byte(src), &geo); err != nil {
 		t.Error(err)
 		return
 	}
-	expected["geobinRequestPath"] = make([]interface{}, 0)
+
+	// nest it inside Geo container, wrap that in a slice and marshal it to json
+	expected := make(map[string]interface{})
+	expected["geo"] = geo
+	expected["path"] = make([]interface{}, 0)
 	expSlice := []map[string]interface{}{expected}
 	exp, _ := json.Marshal(expSlice)
 
@@ -158,9 +162,11 @@ func TestRequestWithNonGJPoint(t *testing.T) {
 		"lng": -10
 	}`
 	exp := `[{
-		"type": "Point",
-		"coordinates": [-10, 10],
-		"geobinRequestPath": []
+		"geo": {
+			"type": "Point",
+			"coordinates": [-10, 10]
+		},
+		"path": []
 	}]`
 	runTest(src, exp, t)
 }
@@ -176,13 +182,17 @@ func TestRequestWithNonGJPoints(t *testing.T) {
 		"y": 20
 	}]`
 	exp := `[{
-		"type": "Point",
-		"coordinates": [-10, 10],
-		"geobinRequestPath": [0]
+		"geo": {
+			"type": "Point",
+			"coordinates": [-10, 10]
+		},
+		"path": [0]
 	}, {
-		"type": "Point",
-		"coordinates": [-20, 20],
-		"geobinRequestPath": [1]
+		"geo": {
+			"type": "Point",
+			"coordinates": [-20, 20]
+		},
+		"path": [1]
 	}]`
 	runTest(src, exp, t)
 }
@@ -194,7 +204,7 @@ func TestRequestWithNonGJLatLngKeys(t *testing.T) {
 	lngKeys := []string{"lng", "lon", "long", "longitude", "x"}
 
 	// For every combination of latKeys and lngKeys, we expect the same result
-	exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRequestPath": []}]`
+	exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "path": []}]`
 	for _, latKey := range latKeys {
 		for _, lngKey := range lngKeys {
 			src := `{"` + latKey + `": 10, "` + lngKey + `": -10}`
@@ -208,7 +218,7 @@ func TestRequestWithNonGJDistKeys(t *testing.T) {
 	distKeys := []string{"dst", "dist", "distance", "rad", "radius", "acc", "accuracy"}
 
 	// For each distKey, we expect the same result
-	exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRadius": 5, "geobinRequestPath": []}]`
+	exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "radius": 5, "path": []}]`
 	for _, distKey := range distKeys {
 		src := `{"lat": 10, "lng": -10, "` + distKey + `": 5}`
 		runTest(src, exp, t)
@@ -223,7 +233,7 @@ func TestRequestWithNonGJGeoKeys(t *testing.T) {
 
 	// For each geoKey, we expect the same coordinates, with geobinRequestPath = [geoKey]
 	for _, geoKey := range geoKeys {
-		exp := `[{"type": "Point", "coordinates": [-10, 10], "geobinRequestPath": ["` + geoKey + `"]}]`
+		exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "path": ["` + geoKey + `"]}]`
 		src := `{"` + geoKey + `": {"lat": 10, "lng": -10}}`
 		runTest(src, exp, t)
 	}
@@ -237,10 +247,12 @@ func TestRequestwithNonGJPointAndRadius(t *testing.T) {
 		"rad": 10
 	}`
 	exp := `[{
-		"type": "Point",
-		"coordinates": [-10, 10],
-		"geobinRequestPath": [],
-		"geobinRadius": 10
+		"geo": {
+			"type": "Point",
+			"coordinates": [-10, 10]
+		},
+		"path": [],
+		"radius": 10
 	}]`
 	runTest(src, exp, t)
 }
@@ -252,8 +264,23 @@ func TestGTCallbackRequest(t *testing.T) {
 		return
 	}
 
-	expJs := `[{"type": "Point", "coordinates": [-122.67545711249113, 45.51986460661744], "geobinRadius": 8, "geobinRequestPath": ["location"]},
-	           {"type": "Point", "coordinates": [-122.77545711249113, 45.41986460661744], "geobinRequestPath": ["trigger", "condition", "geo"]}]`
+	expJs := `[
+		{
+			"geo": {
+				"type": "Point",
+				"coordinates": [-122.67545711249113, 45.51986460661744]
+			},
+			"radius": 8,
+			"path": ["location"]
+		},
+		{
+			"geo": {
+				"type": "Point",
+				"coordinates": [-122.77545711249113, 45.41986460661744]
+			},
+			"path": ["trigger", "condition", "geo"]
+		}
+	]`
 
 	runTest(string(js), expJs, t)
 }
