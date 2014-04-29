@@ -3,10 +3,9 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
@@ -35,11 +34,7 @@ func runTest(src string, expected string, t *testing.T) {
 	resB, _ := json.Marshal(gr.Geo)
 	json.Unmarshal(resB, &res)
 
-	if !reflect.DeepEqual(exp, res) {
-		pretty.Logf("Expected:\n%# v,\nGot:\n%# v", exp, res)
-		t.Fail()
-		return
-	}
+	assert.Equal(t, exp, res)
 }
 
 // runSingleObjectTest is a wrapper function for runTest. It takes an input json string and
