@@ -54,7 +54,7 @@
 
         // declare our map
         var map = new L.Map($attrs.id, mapOptions);
-        var features = L.featureGroup().addTo(map);
+        var features = [];
         var layers = {};
 
         L.control.layers(basemaps.all).addTo(map);
@@ -63,29 +63,58 @@
           return '#'+Math.floor(Math.random()*16777215).toString(16);
         }
 
-        $scope.toggleGeo = function (id, geo) {
-          if (!layers[id]) {
-            var color = randomColor();
-            layers[id] = L.geoJson(geo, {
+        $scope.toggleGeo = function (id, arr) {
+          var color, layer;
+
+          if (!features[id]) {
+            features[id] = L.featureGroup();
+
+            for (var i = 0; i < arr.length; i++) {
+              layer = createLayer(arr[i]);
+              console.log(layer);
+
+              features[id].addLayer(layer);
+            }
+          }
+
+          if (map.hasLayer(features[id])) {
+            return map.removeLayer(features[id]);
+          }
+
+          map.addLayer(features[id]);
+        };
+
+        function createLayer (obj) {
+          var layer;
+          var popup = '<pre>' + JSON.stringify(obj.geo, undefined, 2) + '</pre>';
+          var shapeOptions = {
+            color: randomColor(),
+            stroke: true,
+            weight: 2,
+            opacity: 0.8,
+            fill: true,
+            fillColor: null,
+            fillOpacity: 0.3,
+            clickable: true
+          };
+
+          if (obj.radius) {
+            layer = L.circle(
+              obj.geo.coordinates.reverse(),
+              obj.radius,
+              shapeOptions
+            );
+          } else {
+            layer = L.geoJson(obj.geo, {
               style: function () {
-                return {
-                  color: color,
-                  stroke: true,
-                  weight: 2,
-                  opacity: 0.8,
-                  fill: true,
-                  fillColor: null,
-                  fillOpacity: 0.3,
-                  clickable: true
-                };
+                return shapeOptions;
               }
             });
           }
-          if (features.hasLayer(layers[id])) {
-            return features.removeLayer(layers[id]);
-          }
-          features.addLayer(layers[id]);
-        };
+
+          layer.bindPopup(popup);
+          return layer;
+        }
 
         map.on('baselayerchange', function(e) {
           store.local.set('basemap', e.name);

@@ -111,7 +111,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
   background-color: #434A54;
-  width: 360px;
+  width: 420px;
 }
 
 .sidebar .list-group-item {
@@ -124,8 +124,14 @@ body {
   border-top: none;
 }
 
-.sidebar .panel-primary>.panel-heading {
+.sidebar .panel>.panel-heading {
+  background: #757D88;
   border-color: #434A54;
+  color: #fff;
+  text-align: center;
+}
+.sidebar .panel>.panel-heading.open {
+  background: #3bafda;
 }
 
 .sidebar pre {
@@ -136,6 +142,7 @@ body {
 }
 
 .request-toggle {
+  background-color: transparent;
   margin-bottom: 0;
 }
 .request-toggle .panel-heading {
@@ -173,7 +180,7 @@ body {
   top: 51px;
   right: 0;
   bottom: 40px;
-  left: 360px;
+  left: 420px;
   z-index: 1000;
 }
 
