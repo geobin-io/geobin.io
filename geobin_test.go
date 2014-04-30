@@ -320,7 +320,7 @@ func TestGTCallbackRequest(t *testing.T) {
 func TestParse(t *testing.T) {
 	gr := GeobinRequest{
 		wg: &sync.WaitGroup{},
-		c:  make(chan *Geo),
+		c:  make(chan Geo),
 	}
 
 	input := make(map[string]interface{}, 0)
@@ -349,7 +349,7 @@ func TestParse(t *testing.T) {
 				return
 			}
 
-			gr.Geo = append(gr.Geo, *geo)
+			gr.Geo = append(gr.Geo, geo)
 		}
 	}()
 	gr.wg.Wait()
@@ -362,7 +362,7 @@ func TestParse(t *testing.T) {
 func TestParseArray(t *testing.T) {
 	gr := GeobinRequest{
 		wg: &sync.WaitGroup{},
-		c:  make(chan *Geo),
+		c:  make(chan Geo),
 	}
 
 	inputs := make([]interface{}, 0)
@@ -399,7 +399,7 @@ func TestParseArray(t *testing.T) {
 				return
 			}
 
-			gr.Geo = append(gr.Geo, *geo)
+			gr.Geo = append(gr.Geo, geo)
 			gr.wg.Done()
 		}
 	}()
@@ -413,7 +413,7 @@ func TestParseArray(t *testing.T) {
 func TestParseObject(t *testing.T) {
 	gr := GeobinRequest{
 		wg: &sync.WaitGroup{},
-		c:  make(chan *Geo),
+		c:  make(chan Geo),
 	}
 
 	input := make(map[string]interface{}, 0)
@@ -442,7 +442,7 @@ func TestParseObject(t *testing.T) {
 				return
 			}
 
-			gr.Geo = append(gr.Geo, *geo)
+			gr.Geo = append(gr.Geo, geo)
 			// We're only getting one thing from the channel this time, so just call Done to flag that we've received it
 			gr.wg.Done()
 		}

@@ -16,7 +16,7 @@ type GeobinRequest struct {
 	Body      string            `json:"body"`
 	Geo       []Geo             `json:"geo,omitempty"`
 	wg        *sync.WaitGroup
-	c         chan *Geo
+	c         chan Geo
 }
 
 type Geo struct {
@@ -36,7 +36,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		Body:      string(body),
 		Geo:       make([]Geo, 0),
 		wg:        &sync.WaitGroup{},
-		c:         make(chan *Geo),
+		c:         make(chan Geo),
 	}
 
 	var js interface{}
@@ -54,7 +54,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 				return
 			}
 
-			gr.Geo = append(gr.Geo, *geo)
+			gr.Geo = append(gr.Geo, geo)
 		}
 	}()
 	gr.wg.Wait()
@@ -81,14 +81,14 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 // sending them back up to `parse` in a new goroutine.
 func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
-		g := &Geo{
+		g := Geo{
 			Path: kp,
 			Geo:  o,
 		}
 		gr.c <- g
 	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
 		geo.Path = kp
-		gr.c <- geo
+		gr.c <- *geo
 	} else {
 		for k, v := range o {
 			gr.wg.Add(1)
