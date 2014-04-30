@@ -34,14 +34,22 @@
       </ul>
     </div>
 
-    <div class="well"
+    <div class="panel"
       ng-if="isEmpty(history)">
-      <h4>No History Yet</h4>
-      <p>Try sending a request!</p>
-      <pre>curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"lat":45.523187,"lng":-122.675942}' \
-  {{host}}/{{binId}}</pre>
+      <div class="panel-heading">
+        <h4>No History Yet</h4>
+        <p>Try sending a request!</p>
+      </div>
+
+      <ul class="list-group">
+        <li class="list-group-item">
+          <p>Example using <a href="http://en.wikipedia.org/wiki/CURL">cURL</a>:</p>
+          <pre>curl -X POST \
+-H "Content-Type: application/json" \
+-d '{"lat":45.523187,"lng":-122.675942}' \
+{{host}}/{{binId}}</pre>
+        </li>
+      </ul>
     </div>
   </div>
   <div class="bin-map">
