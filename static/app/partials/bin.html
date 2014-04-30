@@ -1,33 +1,47 @@
 <div class="container-fluid">
   <div class="sidebar">
-    <div class="panel panel-primary request-toggle"
+    <div class="panel request-toggle"
+      ng-if="!isEmpty(history)"
       ng-init="open = false"
       ng-repeat="item in history track by $index"
       ng-class="{open: open}">
       <div class="panel-heading" ng-class="{open: open}">
+        <span class="pull-left badge" ng-class="{'badge-default':isArray(item.geo)}">{{item.geo | arrLength}}</span>
         <span class="detail-toggle" ng-click="open = !open">{{item.timestamp | prettyDate}}</span>
-
-        <span ng-if="isArray(item.geo)" class="badge badge-danger pull-right">
-          {{item.geo | arrLength}}
-        </span>
-
         <input class="pull-right" type="checkbox"
           ng-if="item.geo"
           ng-click="toggleGeo(item.timestamp, item.geo)">
       </div>
 
-      <ul class="list-group" ng-show="open">
+      <ul ng-if="open" class="list-group">
         <div ng-repeat="(k, v) in item.headers" class="list-group-item">
           {{k}}: {{v}}
         </div>
       </ul>
 
-      <ul class="list-group" ng-show="open">
+      <ul ng-if="open" class="list-group">
         <li class="list-group-item">
           <p>body</p>
           <pre>{{item.body | prettyJson}}</pre>
         </li>
       </ul>
+
+      <ul ng-if="open && item.geo" class="list-group">
+        <li class="list-group-item">
+          <p>geo</p>
+          <pre>{{item.geo | prettyJson}}</pre>
+        </li>
+      </ul>
+    </div>
+
+    <div class="well"
+      ng-if="isEmpty(history)">
+      <h4>No History Yet</h4>
+      <p>Try sending a request!</p>
+      <pre>curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"lat":45.523187,"lng":-122.675942}' \
+  {{host}}/{{binId}}</pre>
     </div>
   </div>
   <div class="bin-map">

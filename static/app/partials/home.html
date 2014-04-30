@@ -10,23 +10,52 @@
     <div class="col-md-7">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <h2 class="panel-title">It's like RequestBin, but different</h2>
+          <h2 class="panel-title">What is Geobin?</h2>
         </div>
         <div class="panel-body">
-          <p class="lead">Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-          <p>Lorem ipsum dolor sit amet, consectetaur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-          <p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.</p>
+          <p class="lead">It's like <a href="http://requestb.in/">RequestBin</a>, but different</p>
+          <p>Geobin allows you to create a temporary URL to collect and inspect JSON requests with geographic data. Inspect the headers and body of a request and view any geographic data parsed out of the body on a map.</p>
+          <p>You can also receive data in real time. As long as your browser supports <a href="http://caniuse.com/websockets">WebSockets</a>, once you're looking at a geobin, new data will be streamed directly to the browser and any found geographic data will be mapped instantly.</p>
+
+          <p class="lead">How do we find geographic data?</p>
+          <p>We look for <a href="http://geojsonlint.com/">valid</a> <a href="http://geojson.org/geojson-spec.html">GeoJSON</a>. If no GeoJSON is detected, we'll also look for the following properties:</p>
+
+          <h4>Latitude &amp; Longitude</h4>
+          <p>expected format:</p>
+          <pre>{
+  "latitude": 0,
+  "longitude": 0
+}</pre>
+          <p>accepted keys:</p>
+          <p><strong>Latitude</strong>: <code>lat</code>, <code>latitude</code>, <code>y</code></p>
+          <p><strong>Longitude</strong>: <code>lng</code>, <code>lon</code>, <code>long</code>, <code>longitude</code>, <code>x</code></p>
+
+          <h4>Radius</h4>
+          <p>expected format:</p>
+          <pre>{
+  "latitude": 0,
+  "longitude": 0,
+  "radius": 0
+}</pre>
+          <p>accepted keys:</p>
+          <p><code>dst</code>, <code>dist</code>, <code>distance</code>, <code>rad</code>, <code>radius</code>, <code>acc</code>, <code>accuracy</code></p>
+          <p>note: expects meters</p>
+
+          <h4>Coordinates</h4>
+          <p>expected format:</p>
+          <pre>{
+  "coords": [0,0]
+}</pre>
+          <p>accepted keys:</p>
+          <p><code>geo</code>, <code>loc</code>, <code>location</code>, <code>coord</code>, <code>coordinate</code>, <code>coords</code>, <code>coordinates</code></p>
         </div>
       </div>
     </div>
+
     <div class="col-md-5">
       <div class="panel panel-primary">
         <div class="panel-heading"><i class="fa fa-clock-o"></i> Your History</div>
-        <div ng-hide="bins.length" class="panel-body">
-          <p ng-show="enabled">When you create a new geobin, it will show up in this list until it expires as long as you're using the same browser on your next visit. If you need to access a geobin on another browser or computer, or send it to a friend, just copy the link!</p>
-          <p ng-hide="enabled">Oh no! It looks like your browser doesn't support localStorage. To get the most out of this service, please consider using the latest version of a <a href="http://whatbrowser.org/">modern browser</a> like Chrome or Firefox.</p>
-        </div>
-        <table ng-show="bins.length" class="table">
+        <table ng-if="bins.length" class="table">
           <thead>
             <tr>
               <th>Geobin ID</th>
@@ -42,6 +71,11 @@
             </tr>
           </tbody>
         </table>
+
+        <div ng-if="!bins.length" class="panel-body">
+          <p ng-if="enabled">When you create a new geobin, it will show up in this list until it expires as long as you're using the same browser on your next visit. If you need to access a geobin on another browser or computer, or want to send it to a friend, just copy the link!</p>
+          <p ng-if="!enabled">Oh no! It looks like your browser doesn't support localStorage. To get the most out of this service, please consider using the latest version of a <a href="http://whatbrowser.org/">modern browser</a> like Chrome or Firefox.</p>
+        </div>
       </div>
     </div>
   </div>

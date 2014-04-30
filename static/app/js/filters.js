@@ -35,6 +35,7 @@
 
   // prettyDate
   // ----------
+  // turns a unix timestamp into a localized date and time string
 
   .filter('prettyDate', [function () {
     return function (ts) {
@@ -44,18 +45,22 @@
 
   // arrLength
   // ---------
+  // returns array length  ¯\_(ツ)_/¯
 
   .filter('arrLength', [function () {
     return function (obj) {
-      if (typeof obj === 'array') {
+      if (obj && obj.length) {
         return obj.length;
       }
-      return '';
+      return 0;
     };
   }])
 
   // prettyJson
   // ----------
+  // takes a string
+  // tries to parse it into JSON
+  // tries to turn it into formatted JSON (2 space indentation)
 
   .filter('prettyJson', [function () {
     return function (str) {
