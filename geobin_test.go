@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/bmizerany/assert"
@@ -313,4 +314,141 @@ func TestGTCallbackRequest(t *testing.T) {
 	]`
 
 	runTest(string(js), expJs, t)
+}
+
+// TestParse tests GeobinRequest.parse() independently from GeobinRequest.NewGeobinRequest()
+func TestParse(t *testing.T) {
+	gr := GeobinRequest{
+		wg: &sync.WaitGroup{},
+		c:  make(chan *Geo),
+	}
+
+	input := make(map[string]interface{}, 0)
+	input["x"] = float64(1)
+	input["y"] = float64(-1)
+
+	expGeo := make(map[string]interface{})
+	expGeo["type"] = "Point"
+	expGeo["coordinates"] = []interface{}{
+		input["x"],
+		input["y"],
+	}
+	exp := []Geo{
+		Geo{
+			Geo:  expGeo,
+			Path: make([]interface{}, 0),
+		},
+	}
+
+	gr.wg.Add(1)
+	go gr.parse(input, make([]interface{}, 0))
+	go func() {
+		for {
+			geo, ok := <-gr.c
+			if !ok {
+				return
+			}
+
+			gr.Geo = append(gr.Geo, *geo)
+		}
+	}()
+	gr.wg.Wait()
+	close(gr.c)
+
+	assert.Equal(t, exp, gr.Geo)
+}
+
+// TestParseArray tests GeobinRequest.parseArray independently from GeobinRequest.parse
+func TestParseArray(t *testing.T) {
+	gr := GeobinRequest{
+		wg: &sync.WaitGroup{},
+		c:  make(chan *Geo),
+	}
+
+	inputs := make([]interface{}, 0)
+	outputs := make([]Geo, 0)
+	// Create 5 inputs and their equivalent expected outputs
+	for i := 0; i < 5; i++ {
+		input := make(map[string]interface{}, 0)
+		input["x"] = float64(i)
+		input["y"] = float64(-i)
+		inputs = append(inputs, input)
+
+		expGeo := make(map[string]interface{})
+		expGeo["type"] = "Point"
+		expGeo["coordinates"] = []interface{}{
+			input["x"],
+			input["y"],
+		}
+		exp := Geo{
+			Geo:  expGeo,
+			Path: []interface{}{i},
+		}
+		outputs = append(outputs, exp)
+	}
+
+	gr.wg.Add(1)
+	go gr.parseArray(inputs, make([]interface{}, 0))
+	go func() {
+		// Add enough to the waitgroup so that we can call Done after receiving each one.
+		// Without these two things the waitgroup never finishes.
+		gr.wg.Add(len(inputs) - 1)
+		for {
+			geo, ok := <-gr.c
+			if !ok {
+				return
+			}
+
+			gr.Geo = append(gr.Geo, *geo)
+			gr.wg.Done()
+		}
+	}()
+	gr.wg.Wait()
+	close(gr.c)
+
+	assert.Equal(t, outputs, gr.Geo)
+}
+
+// TestParseObject tests GeobinRequest.parseObject separately from GeobinRequest.parse/parseArray
+func TestParseObject(t *testing.T) {
+	gr := GeobinRequest{
+		wg: &sync.WaitGroup{},
+		c:  make(chan *Geo),
+	}
+
+	input := make(map[string]interface{}, 0)
+	input["x"] = float64(1)
+	input["y"] = float64(-1)
+
+	expGeo := make(map[string]interface{})
+	expGeo["type"] = "Point"
+	expGeo["coordinates"] = []interface{}{
+		input["x"],
+		input["y"],
+	}
+	exp := []Geo{
+		Geo{
+			Geo:  expGeo,
+			Path: make([]interface{}, 0),
+		},
+	}
+
+	gr.wg.Add(1)
+	go gr.parseObject(input, make([]interface{}, 0))
+	go func() {
+		for {
+			geo, ok := <-gr.c
+			if !ok {
+				return
+			}
+
+			gr.Geo = append(gr.Geo, *geo)
+			// We're only getting one thing from the channel this time, so just call Done to flag that we've received it
+			gr.wg.Done()
+		}
+	}()
+	gr.wg.Wait()
+	close(gr.c)
+
+	assert.Equal(t, exp, gr.Geo)
 }
