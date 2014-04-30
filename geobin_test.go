@@ -452,3 +452,46 @@ func TestParseObject(t *testing.T) {
 
 	assert.Equal(t, exp, gr.Geo)
 }
+
+func TestIsOtherGeo(t *testing.T) {
+	_runTest := func(i map[string]interface{}, exp *Geo, shouldFind bool) {
+		res, geo := isOtherGeo(i)
+		assert.T(t, res == shouldFind)
+		assert.Equal(t, exp, geo)
+	}
+
+	// single object
+	input := map[string]interface{}{
+		"lat": 5.5,
+		"lng": 6.6,
+		"rad": 1.2,
+	}
+	expMap := map[string]interface{}{
+		"type": "Point",
+		"coordinates": []interface{}{
+			input["lng"],
+			input["lat"],
+		},
+	}
+	_runTest(input, &Geo{
+		Geo:    expMap,
+		Radius: input["rad"].(float64),
+	}, true)
+
+	// embedded object
+	o := make(map[string]interface{})
+	o["foo"] = "bar"
+	o["baz"] = input
+	_runTest(o, nil, false)
+}
+
+func TestIsGeojson(t *testing.T) {
+	assert.T(t, isGeojson(map[string]interface{}{
+		"type":        "Point",
+		"coordinates": []float64{1, -1},
+	}))
+	assert.T(t, !isGeojson(map[string]interface{}{
+		"type":        "Point",
+		"coordinates": "psyche!",
+	}))
+}
