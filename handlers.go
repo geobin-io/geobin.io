@@ -35,7 +35,7 @@ func createRouter() *http.ServeMux {
 	// API routes
 	r.HandleFunc("/api/1/create", createHandler)
 	r.HandleFunc("/api/1/history/", historyHandler) // /api/1/history/{bin_id}
-	r.HandleFunc("/api/1/ws/", wsHandler)           // api/1/ws/{bin_id}
+	r.HandleFunc("/api/1/ws/", wsHandler)           // /api/1/ws/{bin_id}
 
 	return r
 }
@@ -100,12 +100,15 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Println("Error while reading POST body:", err)
-		http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
-		return
+	var body []byte
+	if r.Body != nil {
+		body, err = ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err != nil {
+			log.Println("Error while reading POST body:", err)
+			http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	headers := make(map[string]string)
