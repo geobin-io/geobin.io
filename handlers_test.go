@@ -41,7 +41,7 @@ func TestBinHandlerEmptyBody(t *testing.T) {
 		t.Error("Could not create bin")
 	}
 
-	// Make sure we get an error when we send nothing to our bin
+	// Make sure we accept null post bodies
 	req, err := http.NewRequest("POST", "http://testing.geobin.io/"+binId, nil)
 	if err != nil {
 		t.Error(err)
@@ -88,6 +88,65 @@ func TestBinHandler200(t *testing.T) {
 	binHandler(w, req)
 
 	assertResponseOK(w, t)
+}
+
+func TestBinHistoryReturnsErrorForInvalidBin(t *testing.T) {
+	binId := "neverland"
+
+	// Check history for our bin
+	req, err := http.NewRequest("GET", "http://testing.geobin.io/api/1/history/"+binId, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	w := httptest.NewRecorder()
+	historyHandler(w, req)
+
+	assertResponseCode(w, http.StatusNotFound, t)
+}
+
+func TestBinHistoryWorksAsIntended(t *testing.T) {
+	binId, err := createBin()
+	if err != nil {
+		t.Error("Could not create bin")
+	}
+
+	// Post some stuff to the bin
+	payload := `{"lat": 10, "lng": -10}`
+	req, err := http.NewRequest("POST", "http://testing.geobin.io/"+binId, strings.NewReader(payload))
+	if err != nil {
+		t.Error(err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	binHandler(w, req)
+
+	// Check history for our bin
+	req, err = http.NewRequest("GET", "http://testing.geobin.io/api/1/history/"+binId, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	w = httptest.NewRecorder()
+	historyHandler(w, req)
+
+	assertResponseOK(w, t)
+
+	var history []map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &history); err != nil {
+		t.Error(err)
+	}
+
+	if len(history) != 1 {
+		t.Errorf("Expected 1 result, got %d", len(history))
+	}
+
+	geo := history[0]
+
+	if payload != geo["body"].(string) {
+		t.Errorf("Expected: %s\nGot: %s", payload, geo["body"].(string))
+	}
 }
 
 /* Test Helpers */
