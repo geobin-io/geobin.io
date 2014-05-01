@@ -6,11 +6,14 @@
       ng-repeat="item in history track by $index"
       ng-class="{open: open}">
       <div class="panel-heading" ng-class="{open: open}">
-        <span class="pull-left badge" ng-class="{'badge-default':isArray(item.geo)}">{{item.geo | arrLength}}</span>
         <span class="detail-toggle" ng-click="open = !open">{{item.timestamp | prettyDate}}</span>
-        <input class="pull-right" type="checkbox"
-          ng-if="item.geo"
-          ng-click="toggleGeo(item.timestamp, item.geo)">
+        <span class="pull-right badge geo-toggle"
+          ng-if="isArray(item.geo)"
+          ng-init="geoActive = false"
+          ng-class="{'badge-success':geoActive}"
+          ng-click="toggleGeo(item.timestamp, item.geo); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
+        <span class="pull-right badge"
+          ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
       </div>
 
       <ul ng-if="open" class="list-group">

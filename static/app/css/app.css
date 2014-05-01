@@ -162,7 +162,8 @@ body {
   margin-bottom: 1px;
   border-radius: 0;
 }
-.detail-toggle {
+.detail-toggle,
+.geo-toggle {
   cursor: pointer;
 }
 .detail-toggle:hover {
