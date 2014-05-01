@@ -22,8 +22,7 @@ var socketMap = &SocketMap{
 }
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 
-// starts the redis pump and http server
-func main() {
+func init() {
 	flag.Parse()
 	// set numprocs
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -32,12 +31,15 @@ func main() {
 	// set up unique seed for random num generation
 	rand.Seed(time.Now().UTC().UnixNano())
 
+	loadConfig()
+	setupRedis()
+}
+
+// starts the redis pump and http server
+func main() {
 	// prepare router
 	r := createRouter()
 	http.Handle("/", r)
-
-	loadConfig()
-	setupRedis()
 
 	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
 	go redisPump()
