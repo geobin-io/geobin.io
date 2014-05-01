@@ -16,10 +16,7 @@ import (
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var socketMap = &SocketMap{
-	Map:    make(map[string]map[string]socket.S),
-	PubSub: pubsub,
-}
+var socketMap = &SocketMap{}
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 
 func init() {
@@ -69,6 +66,11 @@ func setupRedis() {
 		log.Fatal(ping.Err())
 	}
 	pubsub = client.PubSub()
+
+	socketMap = &SocketMap{
+		Map:    make(map[string]map[string]socket.S),
+		PubSub: pubsub,
+	}
 }
 
 // redisPump reads messages out of redis and pushes them through the
