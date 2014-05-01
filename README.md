@@ -5,8 +5,7 @@ geobin-go
 
 1. `go get github.com/geoloqi/geobin-go`
 1. `cd $GOPATH/src/github.com/geoloqi/geobin-go`
-1. `go get` (maybe not needed?)
-1. `npm install`
+1. `make setup` (runs `go get -t` and `npm install`)
 
 ## run
 
@@ -18,7 +17,13 @@ geobin-go
 
 ## test
 
+### server
+
 1. `go test`
+
+### client
+
+See [client readme](static/app/README.md)
 
 ## build
 

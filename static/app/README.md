@@ -24,9 +24,7 @@ folders in your project.
 
 ### Run the Application
 
-```
-go run geobin.go
-```
+`make run`
 
 Now browse to the app at `http://localhost:8080/`.
 
@@ -43,8 +41,8 @@ Now browse to the app at `http://localhost:8080/`.
         filters.js      --> custom angular filters
         services.js     --> custom angular services
       partials/             --> angular view partials (partial html templates)
-        partial1.html
-        partial2.html
+        home.html
+        bin.html
 
     test/               --> test config and source files
       protractor-conf.js    --> config file for running e2e tests with Protractor
