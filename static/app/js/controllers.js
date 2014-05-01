@@ -45,6 +45,21 @@
     api.history(binId, function (data) {
       $scope.history = data;
     });
+
+    api.ws(binId, function(event) {
+      try {
+        var data = JSON.parse(event.data);
+        $scope.$apply(function(){
+          $scope.history.unshift(data);
+        });
+      } catch (e) {
+        console.error('Invalid data received from websocket server');
+      }
+    });
+
+    $scope.$on('$destroy', function binCtrlDestroy () {
+      api.close(binId);
+    });
   }]);
 
 })();

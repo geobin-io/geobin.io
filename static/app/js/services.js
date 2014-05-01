@@ -124,6 +124,23 @@
       });
     };
 
+    // Sockets
+    // -------
+    // Methods pertaining to opening and closing WebSocket connections for a bin
+
+    var sockets = {};
+
+    this.ws = function (binId, callback) {
+      sockets[binId] = new WebSocket('ws://' + window.location.host + '/api/1/ws/' + binId);
+      sockets[binId].onmessage = callback;
+    };
+
+    this.close = function (binId) {
+      if (sockets[binId] && sockets[binId].close) {
+        sockets[binId].close();
+      }
+    };
+
   }]);
 
 })();
