@@ -43,7 +43,7 @@ func createRouter() *mux.Router {
 	// All other GET requests will serve up the Angular app at static/index.html
 	web.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		debugLog("web -", req.URL)
-		http.ServeFile(w, req, "static/index.html")
+		http.ServeFile(w, req, "static/app/index.html")
 	})
 	return r
 }
