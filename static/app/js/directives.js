@@ -71,8 +71,6 @@
 
             for (var i = 0; i < arr.length; i++) {
               layer = createLayer(arr[i]);
-              console.log(layer);
-
               features[id].addLayer(layer);
             }
           }
@@ -82,6 +80,7 @@
           }
 
           map.addLayer(features[id]);
+          map.fitBounds(features[id].getBounds());
         };
 
         function createLayer (obj) {
