@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -45,8 +46,6 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		return &gr
 	}
 
-	gr.wg.Add(1)
-	go gr.parse(js, make([]interface{}, 0))
 	go func() {
 		for {
 			geo, ok := <-gr.c
@@ -57,6 +56,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 			gr.Geo = append(gr.Geo, geo)
 		}
 	}()
+	gr.parse(js, make([]interface{}, 0))
 	gr.wg.Wait()
 	close(gr.c)
 
@@ -67,13 +67,22 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 // on the type of 'b' and signals to the WaitGroup when it has finished. This method
 // is recursive and is called from both parseObject and parseArray when necessary.
 func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
-	switch t := b.(type) {
-	case []interface{}:
-		gr.parseArray(t, kp)
-	case map[string]interface{}:
-		gr.parseObject(t, kp)
-	}
-	gr.wg.Done()
+	debugLog("starting goroutine to parse:", b)
+	gr.wg.Add(1)
+	go func() {
+		switch t := b.(type) {
+		case []interface{}:
+			debugLog("parsing as array")
+			gr.parseArray(t, kp)
+		case map[string]interface{}:
+			debugLog("parsing as object")
+			gr.parseObject(t, kp)
+		default:
+			debugLog("unknown type:", reflect.TypeOf(t))
+		}
+		debugLog("finished parsing:", b)
+		gr.wg.Done()
+	}()
 }
 
 // parseObject checks to see if the given map is GeoJSON or has geo data at the top level.
@@ -91,8 +100,7 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 		gr.c <- *geo
 	} else {
 		for k, v := range o {
-			gr.wg.Add(1)
-			go gr.parse(v, append(kp, k))
+			gr.parse(v, append(kp, k))
 		}
 	}
 }
@@ -100,8 +108,7 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 // parseArray iterates over the given array calling `parse` with the item in a new goroutine.
 func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 	for i, o := range a {
-		gr.wg.Add(1)
-		go gr.parse(o, append(kp, i))
+		gr.parse(o, append(kp, i))
 	}
 }
 
