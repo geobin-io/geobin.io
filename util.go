@@ -37,8 +37,16 @@ func nameExists(name string) (bool, error) {
 	return resp.Val(), nil
 }
 
+// debugLog logs messages sent to it if and only if isDebug or isVerbose are set to true
 func debugLog(v ...interface{}) {
-	if *isDebug {
+	if *isDebug || *isVerbose {
+		log.Println(v...)
+	}
+}
+
+// verboseLog logs messages sent to it if and only if isVerbose is set to true
+func verboseLog(v ...interface{}) {
+	if *isVerbose {
 		log.Println(v...)
 	}
 }
