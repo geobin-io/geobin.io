@@ -200,7 +200,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		ids := strings.Split(socketName, "~br~")
 		bn := ids[0]
 		suuid := ids[1]
-		socketMap.Delete(bn, suuid)
+		if err := socketMap.Delete(bn, suuid); err != nil {
+			log.Println(err)
+		}
 	})
 
 	if err != nil {
