@@ -15,350 +15,136 @@ func init() {
 	*isDebug = true
 }
 
-// runTest takes an input json string (src) and the expected output string (expected). It creates
-// a GeobinRequest using the input string and tests that the GeobinRequest's Geo property,
-// once marshaled to json is the same as the result of marshaling the `expected` json string.
-// Note that expected should be marshalable to []interface{}, as that is what GeobinRequest.Geo
-// will be.
-func runTest(src string, expected string, t *testing.T) {
-	var exp []interface{}
-	if err := json.Unmarshal([]byte(expected), &exp); err != nil {
-		t.Error(err)
-		return
-	}
+// Request tests
 
-	gr := NewGeobinRequest(0, nil, []byte(src))
+func testExpVsGeo(t *testing.T, src []byte, exp []interface{}) {
+	gr := NewGeobinRequest(0, nil, src)
 
-	// convert gr.Geo to json, and back to avoid funky type differences (int vs float) and to
-	// test gr.Geo as it will be seen by the client.
-	var res []interface{}
-	resB, _ := json.Marshal(gr.Geo)
-	json.Unmarshal(resB, &res)
+	var got []interface{}
+	gotBytes, _ := json.Marshal(gr.Geo)
+	json.Unmarshal(gotBytes, &got)
 
-	assert.Equal(t, exp, res)
+	assert.Equal(t, exp, got)
 }
 
-// runSingleObjectTest is a wrapper function for runTest. It takes an input json string and
-// generates the expected output parameter for runTest by unmarshaling the input and setting
-// the geobinRequestPath as expected for an object that is the root of the request body.
-func runSingleObjectTest(src string, t *testing.T) {
-	// make expected geo
-	var geo map[string]interface{}
-	if err := json.Unmarshal([]byte(src), &geo); err != nil {
-		t.Error(err)
-		return
-	}
+func TestRequestWithSingleObject(t *testing.T) {
+	src := []byte(`{ "type": "Point", "coordinates": [100, 0] }`)
 
-	// nest it inside Geo container, wrap that in a slice and marshal it to json
-	expected := make(map[string]interface{})
-	expected["geo"] = geo
-	expected["path"] = make([]interface{}, 0)
-	expSlice := []map[string]interface{}{expected}
-	exp, _ := json.Marshal(expSlice)
-
-	runTest(src, string(exp), t)
-}
-
-// GeoJSON Tests
-
-func TestRequestWithGJPoint(t *testing.T) {
-	runSingleObjectTest(`{ "type": "Point", "coordinates": [100, 0] }`, t)
-}
-
-func TestRequestWithGJLineString(t *testing.T) {
-	runSingleObjectTest(`{ "type": "LineString", "coordinates": [ [100, 0], [101, 1] ] }`, t)
-}
-
-func TestRequestWithGJPolygon(t *testing.T) {
-	jsNoHoles := `{
-		"type": "Polygon",
-    "coordinates": [
-      [ [100, 0], [101, 0], [101, 1], [100, 1], [100, 0] ]
-		]
-	}`
-	jsHoles := `{
-		"type": "Polygon",
-		"coordinates": [
-			[ [100, 0], [101, 0], [101, 1], [100, 1], [100, 0] ],
-			[ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
-		]
-	}`
-
-	runSingleObjectTest(jsNoHoles, t)
-	runSingleObjectTest(jsHoles, t)
-}
-
-func TestRequestWithGJMultiPoint(t *testing.T) {
-	js := `{
-		"type": "MultiPoint",
-		"coordinates": [ [100, 0], [101, 1] ]
-	}`
-	runSingleObjectTest(js, t)
-}
-
-func TestRequestWithGJMultiPolygon(t *testing.T) {
-	js := `{
-		"type": "MultiPolygon",
-    "coordinates": [
-      [[[102, 2], [103, 2], [103, 3], [102, 3], [102, 2]]],
-      [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]],
-			[[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]
-		]
-	}`
-	runSingleObjectTest(js, t)
-}
-
-func TestRequestWithGJGeometryCollection(t *testing.T) {
-	js := `{
-		"type": "GeometryCollection",
-		"geometries": [
-		{
-			"coordinates": [100, 0],
-					"type": "Point"
-				},
-		{
-			"coordinates": [ [101, 0], [102, 1] ],
-					"type": "LineString"
-				}
-		]
-	}`
-	runSingleObjectTest(js, t)
-}
-
-func TestRequestWithGJFeature(t *testing.T) {
-	js := `{
-		"type": "Feature",
-		"id": "feature-test",
-		"geometry": {
-			"coordinates": [-122.65, 45.51],
-			"type": "Point"
-		},
-		"properties": {
-			"foo": "bar"
-		}
-	}`
-	runSingleObjectTest(js, t)
-}
-
-func TestRequestWithGJFeatureCollection(t *testing.T) {
-	js := `{
-		"type": "FeatureCollection",
-		"features": [
-			{
-				"type": "Feature",
-				"id": "feature-test",
-				"geometry": {
-					"coordinates": [-122.65, 45.51],
-					"type": "Point"
-				},
-				"properties": {
-					"foo": "bar"
-				}
-			}
-		]
-	}`
-	runSingleObjectTest(js, t)
-}
-
-func TestRequestWithNestedGeoJSON(t *testing.T) {
-	src := `{
-		"foo": "bar",
-		"data": {
-			"foo": "baz",
-			"properties": {
-				"geo": {
-					"type": "Point",
-					"coordinates": [10, -10]
-				},
-				"someOtherProperty": "with some other value"
-			}
-		}
-	}`
-	exp := `[{
-		"geo": {
-			"type": "Point",
-			"coordinates": [10, -10]
-		},
-		"path": ["data", "properties", "geo"]
-	}]`
-	runTest(src, exp, t)
-}
-
-// Other Geo Tests
-
-func TestRequestWithNonGJPoint(t *testing.T) {
-	src := `{
-		"foo": "bar",
-		"lat": 10,
-		"lng": -10
-	}`
-	exp := `[{
-		"geo": {
-			"type": "Point",
-			"coordinates": [-10, 10]
-		},
-		"path": []
-	}]`
-	runTest(src, exp, t)
-}
-
-func TestRequestWithNonGJPoints(t *testing.T) {
-	src := `[{
-		"foo": "bar",
-		"lat": 10,
-		"lng": -10
-	}, {
-		"foo": "baz",
-		"x": -20,
-		"y": 20
-	}]`
-	exp := `[{
-		"geo": {
-			"type": "Point",
-			"coordinates": [-10, 10]
-		},
-		"path": [0]
-	}, {
-		"geo": {
-			"type": "Point",
-			"coordinates": [-20, 20]
-		},
-		"path": [1]
-	}]`
-	runTest(src, exp, t)
-}
-
-// Ensure that we find lat and long values for all of the variations of the
-// key name
-func TestRequestWithNonGJLatLngKeys(t *testing.T) {
-	latKeys := []string{"lat", "latitude", "y"}
-	lngKeys := []string{"lng", "lon", "long", "longitude", "x"}
-
-	// For every combination of latKeys and lngKeys, we expect the same result
-	exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "path": []}]`
-	for _, latKey := range latKeys {
-		for _, lngKey := range lngKeys {
-			src := `{"` + latKey + `": 10, "` + lngKey + `": -10}`
-			runTest(src, exp, t)
-		}
-	}
-}
-
-// Ensure that we find dist values for all variations of the key name
-func TestRequestWithNonGJDistKeys(t *testing.T) {
-	distKeys := []string{"dst", "dist", "distance", "rad", "radius", "acc", "accuracy"}
-
-	// For each distKey, we expect the same result
-	exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "radius": 5, "path": []}]`
-	for _, distKey := range distKeys {
-		src := `{"lat": 10, "lng": -10, "` + distKey + `": 5}`
-		runTest(src, exp, t)
-	}
-
-}
-
-// Ensure that we find geo objects for all variations of the key name.
-// Also ensures that the geobinRequestPath is correct in all cases.
-func TestRequestWithNonGJGeoKeys(t *testing.T) {
-	geoKeys := []string{"geo", "loc", "location", "coord", "coordinate", "coords", "coordinates"}
-
-	// For each geoKey, we expect the same coordinates, with geobinRequestPath = [geoKey]
-	for _, geoKey := range geoKeys {
-		exp := `[{"geo": {"type": "Point", "coordinates": [-10, 10]}, "path": ["` + geoKey + `"]}]`
-		src := `{"` + geoKey + `": {"lat": 10, "lng": -10}}`
-		runTest(src, exp, t)
-	}
-}
-
-func TestRequestwithNonGJPointAndRadius(t *testing.T) {
-	src := `{
-		"foo": "bar",
-		"lat": 10,
-		"lng": -10,
-		"rad": 10
-	}`
-	exp := `[{
-		"geo": {
-			"type": "Point",
-			"coordinates": [-10, 10]
-		},
-		"path": [],
-		"radius": 10
-	}]`
-	runTest(src, exp, t)
-}
-
-func TestGTCallbackRequest(t *testing.T) {
-	js, err := ioutil.ReadFile("gtCallback.json")
-	if err != nil {
-		t.Error("Error reading gtCallback.json. ", err)
-		return
-	}
-
-	expJs := `[
-		{
-			"geo": {
-				"type": "Point",
-				"coordinates": [-122.67545711249113, 45.51986460661744]
+	expected := []interface{}{
+		map[string]interface{}{
+			"geo": map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(100), float64(0)},
 			},
-			"radius": 8,
-			"path": ["location"]
+			"path": make([]interface{}, 0),
 		},
-		{
-			"geo": {
-				"type": "Point",
-				"coordinates": [-122.77545711249113, 45.41986460661744]
-			},
-			"path": ["trigger", "condition", "geo"]
-		}
-	]`
+	}
 
-	runTest(string(js), expJs, t)
+	testExpVsGeo(t, src, expected)
 }
 
-// TestParse tests GeobinRequest.parse() independently from GeobinRequest.NewGeobinRequest()
+func TestRequestWithMultipleObjects(t *testing.T) {
+	src := []byte(`[
+		{ "type": "Point", "coordinates": [100, 0] },
+		{ "type": "Point", "coordinates": [0, 100] }
+	]`)
+
+	expected := []interface{}{
+		map[string]interface{}{
+			"geo": map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(100), float64(0)},
+			},
+			"path": []interface{}{float64(0)},
+		},
+		map[string]interface{}{
+			"geo": map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(0), float64(100)},
+			},
+			"path": []interface{}{float64(1)},
+		},
+	}
+
+	testExpVsGeo(t, src, expected)
+}
+
+// Parsing tests
+
 func TestParse(t *testing.T) {
-	gr := GeobinRequest{
-		wg: &sync.WaitGroup{},
-		c:  make(chan Geo),
+	runTest := func(input interface{}, expected []Geo) {
+		gr := GeobinRequest{
+			wg: &sync.WaitGroup{},
+			c:  make(chan Geo),
+		}
+
+		go func() {
+			for {
+				geo, ok := <-gr.c
+				if !ok {
+					return
+				}
+
+				gr.Geo = append(gr.Geo, geo)
+			}
+		}()
+		gr.parse(input, make([]interface{}, 0))
+		gr.wg.Wait()
+		close(gr.c)
+
+		assert.Equal(t, expected, gr.Geo)
 	}
 
-	input := make(map[string]interface{}, 0)
-	input["x"] = float64(1)
-	input["y"] = float64(-1)
-
-	expGeo := make(map[string]interface{})
-	expGeo["type"] = "Point"
-	expGeo["coordinates"] = []interface{}{
-		input["x"],
-		input["y"],
+	singleObject := map[string]interface{}{
+		"x": float64(1),
+		"y": float64(-1),
 	}
-	exp := []Geo{
+	expected := []Geo{
 		Geo{
-			Geo:  expGeo,
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{singleObject["x"], singleObject["y"]},
+			},
 			Path: make([]interface{}, 0),
 		},
 	}
+	debugLog("TestParse - singleObject")
+	runTest(singleObject, expected)
 
-	gr.wg.Add(1)
-	go gr.parse(input, make([]interface{}, 0))
-	go func() {
-		for {
-			geo, ok := <-gr.c
-			if !ok {
-				return
-			}
-
-			gr.Geo = append(gr.Geo, geo)
-		}
-	}()
-	gr.wg.Wait()
-	close(gr.c)
-
-	assert.Equal(t, exp, gr.Geo)
+	multipleObjects := []interface{}{
+		map[string]interface{}{
+			"x": float64(1),
+			"y": float64(-1),
+		},
+		map[string]interface{}{
+			"x": float64(2),
+			"y": float64(-2),
+		},
+	}
+	expected = []Geo{
+		Geo{
+			Geo: map[string]interface{}{
+				"type": "Point",
+				"coordinates": []interface{}{
+					multipleObjects[0].(map[string]interface{})["x"],
+					multipleObjects[0].(map[string]interface{})["y"]},
+			},
+			Path: []interface{}{0},
+		},
+		Geo{
+			Geo: map[string]interface{}{
+				"type": "Point",
+				"coordinates": []interface{}{
+					multipleObjects[1].(map[string]interface{})["x"],
+					multipleObjects[1].(map[string]interface{})["y"]},
+			},
+			Path: []interface{}{1},
+		},
+	}
+	debugLog("TestParse - multipleObjects")
+	runTest(multipleObjects, expected)
 }
 
-// TestParseArray tests GeobinRequest.parseArray independently from GeobinRequest.parse
 func TestParseArray(t *testing.T) {
 	gr := GeobinRequest{
 		wg: &sync.WaitGroup{},
@@ -369,30 +155,24 @@ func TestParseArray(t *testing.T) {
 	outputs := make([]Geo, 0)
 	// Create 5 inputs and their equivalent expected outputs
 	for i := 0; i < 5; i++ {
-		input := make(map[string]interface{}, 0)
-		input["x"] = float64(i)
-		input["y"] = float64(-i)
-		inputs = append(inputs, input)
+		inputs = append(inputs, map[string]interface{}{
+			"x": float64(i),
+			"y": float64(-i),
+		})
 
-		expGeo := make(map[string]interface{})
-		expGeo["type"] = "Point"
-		expGeo["coordinates"] = []interface{}{
-			input["x"],
-			input["y"],
-		}
-		exp := Geo{
-			Geo:  expGeo,
+		outputs = append(outputs, Geo{
+			Geo: map[string]interface{}{
+				"type": "Point",
+				"coordinates": []interface{}{
+					inputs[i].(map[string]interface{})["x"],
+					inputs[i].(map[string]interface{})["y"],
+				},
+			},
 			Path: []interface{}{i},
-		}
-		outputs = append(outputs, exp)
+		})
 	}
 
-	gr.wg.Add(1)
-	go gr.parseArray(inputs, make([]interface{}, 0))
 	go func() {
-		// Add enough to the waitgroup so that we can call Done after receiving each one.
-		// Without these two things the waitgroup never finishes.
-		gr.wg.Add(len(inputs) - 1)
 		for {
 			geo, ok := <-gr.c
 			if !ok {
@@ -400,98 +180,292 @@ func TestParseArray(t *testing.T) {
 			}
 
 			gr.Geo = append(gr.Geo, geo)
-			gr.wg.Done()
 		}
 	}()
+	gr.parseArray(inputs, make([]interface{}, 0))
 	gr.wg.Wait()
 	close(gr.c)
 
 	assert.Equal(t, outputs, gr.Geo)
 }
 
-// TestParseObject tests GeobinRequest.parseObject separately from GeobinRequest.parse/parseArray
 func TestParseObject(t *testing.T) {
-	gr := GeobinRequest{
-		wg: &sync.WaitGroup{},
-		c:  make(chan Geo),
+	runTest := func(input map[string]interface{}, expected []Geo, name string) {
+		debugLog("TestParseObject -", name)
+		gr := GeobinRequest{
+			wg: &sync.WaitGroup{},
+			c:  make(chan Geo),
+		}
+		go func() {
+			for {
+				geo, ok := <-gr.c
+				if !ok {
+					return
+				}
+
+				gr.Geo = append(gr.Geo, geo)
+			}
+		}()
+		gr.parseObject(input, make([]interface{}, 0))
+		gr.wg.Wait()
+		close(gr.c)
+
+		assert.Equal(t, expected, gr.Geo)
 	}
 
-	input := make(map[string]interface{}, 0)
-	input["x"] = float64(1)
-	input["y"] = float64(-1)
-
-	expGeo := make(map[string]interface{})
-	expGeo["type"] = "Point"
-	expGeo["coordinates"] = []interface{}{
-		input["x"],
-		input["y"],
+	geoJson := map[string]interface{}{
+		"type":        "Point",
+		"coordinates": []interface{}{float64(1), float64(-1)},
 	}
-	exp := []Geo{
+	runTest(geoJson, []Geo{
 		Geo{
-			Geo:  expGeo,
+			Geo:  geoJson,
 			Path: make([]interface{}, 0),
 		},
+	}, "geoJson")
+
+	otherGeo := map[string]interface{}{
+		"x": float64(2),
+		"y": float64(-2),
 	}
+	runTest(otherGeo, []Geo{
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{otherGeo["x"], otherGeo["y"]},
+			},
+			Path: make([]interface{}, 0),
+		},
+	}, "otherGeo")
 
-	gr.wg.Add(1)
-	go gr.parseObject(input, make([]interface{}, 0))
-	go func() {
-		for {
-			geo, ok := <-gr.c
-			if !ok {
-				return
-			}
-
-			gr.Geo = append(gr.Geo, geo)
-			// We're only getting one thing from the channel this time, so just call Done to flag that we've received it
-			gr.wg.Done()
-		}
-	}()
-	gr.wg.Wait()
-	close(gr.c)
-
-	assert.Equal(t, exp, gr.Geo)
-}
-
-func TestIsOtherGeo(t *testing.T) {
-	_runTest := func(i map[string]interface{}, exp *Geo, shouldFind bool) {
-		res, geo := isOtherGeo(i)
-		assert.T(t, res == shouldFind)
-		assert.Equal(t, exp, geo)
-	}
-
-	// single object
-	input := map[string]interface{}{
-		"lat": 5.5,
-		"lng": 6.6,
-		"rad": 1.2,
-	}
-	expMap := map[string]interface{}{
-		"type": "Point",
-		"coordinates": []interface{}{
-			input["lng"],
-			input["lat"],
+	nested := map[string]interface{}{
+		"foo": "bar",
+		"x":   1,
+		"baz": map[string]interface{}{
+			"geo": map[string]interface{}{
+				"x": float64(3),
+				"y": float64(-3),
+			},
 		},
 	}
-	_runTest(input, &Geo{
-		Geo:    expMap,
-		Radius: input["rad"].(float64),
-	}, true)
+	runTest(nested, []Geo{
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(3), float64(-3)},
+			},
+			Path: []interface{}{"baz", "geo"},
+		},
+	}, "nested")
 
-	// embedded object
-	o := make(map[string]interface{})
-	o["foo"] = "bar"
-	o["baz"] = input
-	_runTest(o, nil, false)
+	nestedInArray := map[string]interface{}{
+		"foo": "bar",
+		"geos": []interface{}{
+			map[string]interface{}{
+				"x": float64(40),
+				"y": float64(-40),
+			},
+			map[string]interface{}{
+				"x": float64(41),
+				"y": float64(-41),
+			},
+		},
+	}
+	runTest(nestedInArray, []Geo{
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(40), float64(-40)},
+			},
+			Path: []interface{}{"geos", 0},
+		},
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{float64(41), float64(-41)},
+			},
+			Path: []interface{}{"geos", 1},
+		},
+	}, "nestedInArray")
 }
 
-func TestIsGeojson(t *testing.T) {
+// Geo Detection tests
+
+func runIsOtherGeoTest(t *testing.T, o map[string]interface{}, shouldFind bool, exp *Geo) {
+	res, got := isOtherGeo(o)
+	assert.T(t, res == shouldFind)
+	assert.Equal(t, exp, got)
+}
+
+// Ensure that we find lat and long values for all of the variations of the
+// key names
+func TestIsOtherGeoLatLngKeys(t *testing.T) {
+	latKeys := []string{"lat", "latitude", "y"}
+	lngKeys := []string{"lng", "lon", "long", "longitude", "x"}
+
+	// For every combination of latKeys and lngKeys, we expect the same result
+	exp := Geo{
+		Geo: map[string]interface{}{
+			"type":        "Point",
+			"coordinates": []interface{}{float64(10), float64(-10)},
+		},
+	}
+
+	debugLog("===Begin TestIsOtherGeoLatLngKeys===")
+	for _, latKey := range latKeys {
+		for _, lngKey := range lngKeys {
+			runIsOtherGeoTest(t, map[string]interface{}{
+				latKey: float64(-10),
+				lngKey: float64(10),
+			}, true, &exp)
+		}
+	}
+	debugLog("===End TestIsOtherGeoLatLngKeys===")
+}
+
+// Ensure that we find dist values for all variations of the key name
+func TestIsOtherGeoDistKeys(t *testing.T) {
+	distKeys := []string{"dst", "dist", "distance", "rad", "radius", "acc", "accuracy"}
+
+	// For each distKey, we expect the same result
+	exp := Geo{
+		Geo: map[string]interface{}{
+			"type":        "Point",
+			"coordinates": []interface{}{float64(10), float64(-10)},
+		},
+		Radius: float64(5),
+	}
+
+	debugLog("===Begin TestIsOtherGeoDistKeys===")
+	for _, distKey := range distKeys {
+		runIsOtherGeoTest(t, map[string]interface{}{
+			"x":     float64(10),
+			"y":     float64(-10),
+			distKey: float64(5),
+		}, true, &exp)
+	}
+	debugLog("===End TestIsOtherGeoDistKeys===")
+}
+
+// Ensure that we find geo objects for all variations of the key name.
+func TestIsOtherGeoGeoKeys(t *testing.T) {
+	geoKeys := []string{"geo", "loc", "location", "coord", "coordinate", "coords", "coordinates"}
+
+	// For each geoKey we expect the same result
+	exp := Geo{
+		Geo: map[string]interface{}{
+			"type":        "Point",
+			"coordinates": []interface{}{float64(10), float64(-10)},
+		},
+	}
+
+	debugLog("===Begin TestIsOtherGeoGeoKeys===")
+	for _, geoKey := range geoKeys {
+		runIsOtherGeoTest(t, map[string]interface{}{
+			geoKey: []float64{10, -10},
+		}, true, &exp)
+	}
+	debugLog("===End TestIsOtherGeoGeoKeys===")
+}
+
+// TODO: Move these tests to a geojson specific test file within the geojson lib
+// that we write.
+func TestIsGeojsonPoint(t *testing.T) {
+	// Valid
 	assert.T(t, isGeojson(map[string]interface{}{
 		"type":        "Point",
 		"coordinates": []float64{1, -1},
 	}))
+
+	// Invalid
 	assert.T(t, !isGeojson(map[string]interface{}{
 		"type":        "Point",
 		"coordinates": "psyche!",
 	}))
+	/*
+		Our current geojson lib sucks and says these are all valid. Will rewrite.
+		assert.T(t, !isGeojson(map[string]interface{}{
+			"type": "Point",
+			"coordinates": []float64{1,2,3},
+		}))
+		assert.T(t, !isGeojson(map[string]interface{}{
+			"type":        "Point",
+			"coordinates": []float64{360, 360}, // invalid lat/long
+		}))
+	*/
+}
+
+/* Ignore these for now, will move to lib
+func TestIsGeoJsonMultiPoint(t *testing.T) {
+	// Valid
+	assert.T(t, isGeojson(map[string]interface{}{
+		"type": "MultiPoint",
+		"coordinates": [][]float64{
+			[]float64{1, -1},
+			[]float64{2, -2},
+			[]float64{3, -3},
+		},
+	}))
+
+	// Invalid
+	assert.T(t, !isGeojson(map[string]interface{}{
+		"type":        "MultiPoint",
+		"coordinates": []float64{0, 0},
+	}))
+}
+
+func TestIsGeoJsonLineString(t *testing.T) {
+	// Valid
+	assert.T(t, isGeojson(map[string]interface{}{
+		"type": "LineString",
+		"coordinates": [][]float64{
+			[]float64{0, 0},
+			[]float64{1, 1},
+			[]float64{2, 2},
+		},
+	}))
+
+	// Invalid
+	assert.T(t, !isGeojson(map[string]interface{}{
+		"type":        "LineString",
+		"coordinates": []float64{0, 0}, // coords should be an array of two or more arrays of 2 floats
+	}))
+	assert.T(t, !isGeojson(map[string]interface{}{
+		"type":        "LineString",
+		"coordinates": [][]float64{[]float64{0, 0}},
+	}))
+}
+*/
+
+// Other Geo Tests
+
+func TestGTCallbackRequest(t *testing.T) {
+	js, err := ioutil.ReadFile("gtCallback.json")
+	if err != nil {
+		t.Error("Error reading gtCallback.json.", err)
+		return
+	}
+
+	gr := NewGeobinRequest(0, nil, js)
+	got := gr.Geo
+
+	expected := []Geo{
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{-122.67545711249113, 45.51986460661744},
+			},
+			Radius: 8,
+			Path:   []interface{}{"location"},
+		},
+		Geo{
+			Geo: map[string]interface{}{
+				"type":        "Point",
+				"coordinates": []interface{}{-122.77545711249113, 45.41986460661744},
+			},
+			Path: []interface{}{"trigger", "condition", "geo"},
+		},
+	}
+
+	assert.Equal(t, expected, got)
 }
