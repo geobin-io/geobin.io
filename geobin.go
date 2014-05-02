@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/geoloqi/geobin-go/socket"
 	redis "github.com/vmihailenco/redis/v2"
 )
 
@@ -68,7 +67,7 @@ func setupRedis() {
 	pubsub = client.PubSub()
 
 	socketMap = &SocketMap{
-		Map:    make(map[string]map[string]socket.S),
+		Map:    make(map[string]map[string]Socket),
 		PubSub: pubsub,
 	}
 }
