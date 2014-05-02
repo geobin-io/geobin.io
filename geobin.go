@@ -66,7 +66,7 @@ func setupRedis() {
 	}
 	pubsub = client.PubSub()
 
-	socketMap = NewSocketMap(make(map[string]map[string]Socket), pubsub)
+	socketMap = NewSocketMap(pubsub)
 }
 
 // redisPump reads messages out of redis and pushes them through the

@@ -17,10 +17,9 @@ type UnSub interface {
 	Unsubscribe(...string) error
 }
 
-func NewSocketMap(smap map[string]map[string]Socket, unsubber UnSub) SocketMap {
+func NewSocketMap(unsubber UnSub) SocketMap {
 	return &sm{
 		unsubber: unsubber,
-		smap:     smap,
 	}
 }
 
@@ -62,7 +61,7 @@ func (sm *sm) Delete(binName, socketUUID string) error {
 	sm.lk.Lock()
 	defer sm.lk.Unlock()
 	if sm.smap == nil {
-		return errors.New("There are no known sockets to delete.")
+		return errors.New("There are no known sockets.")
 	}
 
 	sockets, ok := sm.smap[binName]

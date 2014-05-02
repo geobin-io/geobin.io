@@ -32,12 +32,12 @@ func (ms *MockSocket) Close() {
 }
 
 func TestNewSocketMap(t *testing.T) {
-	sm := getSocketMap(t)
+	sm := NewSocketMap(getUnsubFunc(t))
 	assert.NotEqual(t, nil, sm)
 }
 
 func TestAddAndGet(t *testing.T) {
-	sm := NewSocketMap(nil, getUnsubFunc(t))
+	sm := NewSocketMap(getUnsubFunc(t))
 	ms := &MockSocket{name: "mock_socket"}
 	sm.Add("bin_name", "socket_uuid", ms)
 	sck, ok := sm.Get("bin_name", "socket_uuid")
@@ -53,7 +53,7 @@ func TestDelete(t *testing.T) {
 		return nil
 	}
 
-	sm := NewSocketMap(nil, unsubFunc(unsubf))
+	sm := NewSocketMap(unsubFunc(unsubf))
 	err := sm.Delete("bin_name", "socket_uuid1")
 	assert.NotEqual(t, nil, err)
 	ms1 := &MockSocket{name: "mock_socket1"}
@@ -74,7 +74,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestSend(t *testing.T) {
-	sm := NewSocketMap(nil, getUnsubFunc(t))
+	sm := NewSocketMap(getUnsubFunc(t))
 	err := sm.Send("bin_name", []byte("a message"))
 	assert.NotEqual(t, nil, err)
 	var didWrite bool = false
@@ -88,10 +88,6 @@ func TestSend(t *testing.T) {
 	// sleep a bit to allow go routines to be scheduled and run
 	time.Sleep(25 * time.Microsecond)
 	assert.Equal(t, true, didWrite)
-}
-
-func getSocketMap(t *testing.T) SocketMap {
-	return NewSocketMap(make(map[string]map[string]Socket), getUnsubFunc(t))
 }
 
 func getUnsubFunc(t *testing.T) unsubFunc {
