@@ -4,25 +4,24 @@ import (
 	"log"
 	"sync"
 
-	"github.com/geoloqi/geobin-go/socket"
 	redis "github.com/vmihailenco/redis/v2"
 )
 
 type SocketMap struct {
 	lk     sync.Mutex
 	PubSub *redis.PubSub
-	Map    map[string]map[string]socket.S
+	Map    map[string]map[string]Socket
 }
 
-func (sm *SocketMap) Add(binName string, socketUUID string, s socket.S) {
+func (sm *SocketMap) Add(binName string, socketUUID string, s Socket) {
 	sm.lk.Lock()
 	defer sm.lk.Unlock()
 	if sm.Map == nil {
-		sm.Map = make(map[string]map[string]socket.S)
+		sm.Map = make(map[string]map[string]Socket)
 	}
 
 	if _, ok := sm.Map[binName]; !ok {
-		sm.Map[binName] = make(map[string]socket.S)
+		sm.Map[binName] = make(map[string]Socket)
 	}
 
 	sm.Map[binName][socketUUID] = s
@@ -67,7 +66,7 @@ func (sm *SocketMap) Send(binName string, payload []byte) {
 	}
 
 	for _, s := range sockets {
-		go func(s socket.S, p []byte) {
+		go func(s Socket, p []byte) {
 			s.Write(p)
 		}(s, payload)
 	}

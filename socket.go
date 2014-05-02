@@ -1,7 +1,7 @@
 // Package socket wraps the `github.com/gorilla/websocket` package with a basic implementation
 // based on their sample code, with the goal of greatly reducing the interface for some generalized
 // use cases.
-package socket
+package main
 
 import (
 	"log"
@@ -23,7 +23,7 @@ const (
 )
 
 // S exposes some methods for interacting with a websocket
-type S interface {
+type Socket interface {
 	// Submits a payload to the web socket as a text message.
 	Write([]byte)
 	// return the provided name
@@ -60,7 +60,7 @@ type s struct {
 // `oc` here is the func that's called when the socket is just about to be closed. The call is made from a
 // separate routine.
 // If you do not care about these callbacks, pass nil instead.
-func NewSocket(name string, w http.ResponseWriter, r *http.Request, or func(int, []byte), oc func(string)) (S, error) {
+func NewSocket(name string, w http.ResponseWriter, r *http.Request, or func(int, []byte), oc func(string)) (Socket, error) {
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
 		http.Error(w, "Not a websocket handshake", http.StatusBadRequest)
@@ -81,7 +81,7 @@ func NewSocket(name string, w http.ResponseWriter, r *http.Request, or func(int,
 // `oc` here is the func that's called when the socket is just about to be closed. The call is made from a
 // separate routine.
 // If you do not care about these callbacks, pass nil instead.
-func NewClient(name string, socketURL string, or func(int, []byte), oc func(string)) (S, error) {
+func NewClient(name string, socketURL string, or func(int, []byte), oc func(string)) (Socket, error) {
 	u, err := url.Parse(socketURL)
 	if err != nil {
 		log.Println("Could not parse URL from provided URL string:", socketURL, err)
@@ -103,7 +103,7 @@ func NewClient(name string, socketURL string, or func(int, []byte), oc func(stri
 	return socketSetup(name, ws, or, oc), nil
 }
 
-func socketSetup(name string, ws *websocket.Conn, or func(int, []byte), oc func(string)) S {
+func socketSetup(name string, ws *websocket.Conn, or func(int, []byte), oc func(string)) Socket {
 	if or == nil {
 		or = func(int, []byte) {}
 	}

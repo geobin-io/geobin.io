@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/geoloqi/geobin-go/socket"
 	"github.com/nu7hatch/gouuid"
 	redis "github.com/vmihailenco/redis/v2"
 )
@@ -196,7 +195,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := id.String()
 
-	s, err := socket.NewSocket(binName+"~br~"+uuid, w, r, nil, func(socketName string) {
+	s, err := NewSocket(binName+"~br~"+uuid, w, r, nil, func(socketName string) {
 		// the socketname is a composite of the bin name, and the socket UUID
 		ids := strings.Split(socketName, "~br~")
 		bn := ids[0]
