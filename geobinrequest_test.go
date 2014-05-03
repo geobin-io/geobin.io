@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -17,14 +18,42 @@ func init() {
 
 // Request tests
 
-func testExpVsGeo(t *testing.T, src []byte, exp []interface{}) {
-	gr := NewGeobinRequest(0, nil, src)
+func testSlicesContainSameGeos(t *testing.T, a, b []Geo) {
+	// If they aren't the same length, they don't have the same contents
+	assert.Tf(t, len(a) == len(b), "Slices weren't the same length: \n%# v\n%# v\n", a, b)
 
-	var got []interface{}
-	gotBytes, _ := json.Marshal(gr.Geo)
-	json.Unmarshal(gotBytes, &got)
+Equal:
+	for _, aVal := range a {
+		for _, bVal := range b {
+			if reflect.DeepEqual(aVal, bVal) {
+				// found it, move along.
+				continue Equal
+			}
+		}
 
-	assert.Equal(t, exp, got)
+		// We didn't find this one, fail the test and return
+		t.Fatalf("Expected to find:\n%# v\n in results but did not.", aVal)
+		return
+	}
+}
+
+func testSlicesContainSameItems(t *testing.T, a, b []interface{}) {
+	// If they aren't the same length, they don't have the same contents
+	assert.T(t, len(a) == len(b))
+
+Equal:
+	for _, aVal := range a {
+		for _, bVal := range b {
+			if reflect.DeepEqual(aVal, bVal) {
+				// found it, move along.
+				continue Equal
+			}
+		}
+
+		// We didn't find this one, fail the test and return
+		t.Fatalf("Expected to find:\n%# v\n in results but did not.", aVal)
+		return
+	}
 }
 
 func TestRequestWithSingleObject(t *testing.T) {
@@ -40,7 +69,13 @@ func TestRequestWithSingleObject(t *testing.T) {
 		},
 	}
 
-	testExpVsGeo(t, src, expected)
+	gr := NewGeobinRequest(0, nil, src)
+
+	var got []interface{}
+	gotBytes, _ := json.Marshal(gr.Geo)
+	json.Unmarshal(gotBytes, &got)
+
+	assert.Equal(t, expected, got)
 }
 
 func TestRequestWithMultipleObjects(t *testing.T) {
@@ -66,7 +101,13 @@ func TestRequestWithMultipleObjects(t *testing.T) {
 		},
 	}
 
-	testExpVsGeo(t, src, expected)
+	gr := NewGeobinRequest(0, nil, src)
+
+	var got []interface{}
+	gotBytes, _ := json.Marshal(gr.Geo)
+	json.Unmarshal(gotBytes, &got)
+
+	testSlicesContainSameItems(t, expected, got)
 }
 
 // Parsing tests
@@ -82,6 +123,7 @@ func TestParse(t *testing.T) {
 			for {
 				geo, ok := <-gr.c
 				if !ok {
+					debugLog("channel closed")
 					return
 				}
 
@@ -92,7 +134,7 @@ func TestParse(t *testing.T) {
 		gr.wg.Wait()
 		close(gr.c)
 
-		assert.Equal(t, expected, gr.Geo)
+		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}
 
 	singleObject := map[string]interface{}{
@@ -146,13 +188,14 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseArray(t *testing.T) {
+	verboseLog("TestParseArray")
 	gr := GeobinRequest{
 		wg: &sync.WaitGroup{},
 		c:  make(chan Geo),
 	}
 
 	inputs := make([]interface{}, 0)
-	outputs := make([]Geo, 0)
+	expected := make([]Geo, 0)
 	// Create 5 inputs and their equivalent expected outputs
 	for i := 0; i < 5; i++ {
 		inputs = append(inputs, map[string]interface{}{
@@ -160,7 +203,7 @@ func TestParseArray(t *testing.T) {
 			"y": float64(-i),
 		})
 
-		outputs = append(outputs, Geo{
+		expected = append(expected, Geo{
 			Geo: map[string]interface{}{
 				"type": "Point",
 				"coordinates": []interface{}{
@@ -176,6 +219,7 @@ func TestParseArray(t *testing.T) {
 		for {
 			geo, ok := <-gr.c
 			if !ok {
+				debugLog("channel closed")
 				return
 			}
 
@@ -186,7 +230,7 @@ func TestParseArray(t *testing.T) {
 	gr.wg.Wait()
 	close(gr.c)
 
-	assert.Equal(t, outputs, gr.Geo)
+	testSlicesContainSameGeos(t, expected, gr.Geo)
 }
 
 func TestParseObject(t *testing.T) {
@@ -196,6 +240,7 @@ func TestParseObject(t *testing.T) {
 			wg: &sync.WaitGroup{},
 			c:  make(chan Geo),
 		}
+		gr.wg.Add(len(expected))
 		go func() {
 			for {
 				geo, ok := <-gr.c
@@ -204,13 +249,14 @@ func TestParseObject(t *testing.T) {
 				}
 
 				gr.Geo = append(gr.Geo, geo)
+				gr.wg.Done()
 			}
 		}()
 		gr.parseObject(input, make([]interface{}, 0))
 		gr.wg.Wait()
 		close(gr.c)
 
-		assert.Equal(t, expected, gr.Geo)
+		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}
 
 	geoJson := map[string]interface{}{
@@ -293,7 +339,7 @@ func TestParseObject(t *testing.T) {
 
 func runIsOtherGeoTest(t *testing.T, o map[string]interface{}, shouldFind bool, exp *Geo) {
 	res, got := isOtherGeo(o)
-	assert.T(t, res == shouldFind)
+	assert.Equal(t, res, shouldFind)
 	assert.Equal(t, exp, got)
 }
 
@@ -440,15 +486,6 @@ func TestIsGeoJsonLineString(t *testing.T) {
 // Other Geo Tests
 
 func TestGTCallbackRequest(t *testing.T) {
-	js, err := ioutil.ReadFile("gtCallback.json")
-	if err != nil {
-		t.Error("Error reading gtCallback.json.", err)
-		return
-	}
-
-	gr := NewGeobinRequest(0, nil, js)
-	got := gr.Geo
-
 	expected := []Geo{
 		Geo{
 			Geo: map[string]interface{}{
@@ -467,5 +504,13 @@ func TestGTCallbackRequest(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, got)
+	js, err := ioutil.ReadFile("gtCallback.json")
+	if err != nil {
+		t.Error("Error reading gtCallback.json.", err)
+		return
+	}
+
+	gr := NewGeobinRequest(0, nil, js)
+
+	testSlicesContainSameGeos(t, expected, gr.Geo)
 }
