@@ -15,7 +15,7 @@ import (
 var config = &Config{}
 var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
-var socketMap = &SocketMap{}
+var socketMap SocketMap
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 
 func init() {
@@ -66,10 +66,7 @@ func setupRedis() {
 	}
 	pubsub = client.PubSub()
 
-	socketMap = &SocketMap{
-		Map:    make(map[string]map[string]Socket),
-		PubSub: pubsub,
-	}
+	socketMap = NewSocketMap(pubsub)
 }
 
 // redisPump reads messages out of redis and pushes them through the
@@ -84,7 +81,9 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			socketMap.Send(v.Channel, []byte(v.Payload))
+			if err = socketMap.Send(v.Channel, []byte(v.Payload)); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
