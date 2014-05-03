@@ -128,6 +128,7 @@ func TestParse(t *testing.T) {
 				}
 
 				gr.Geo = append(gr.Geo, geo)
+				gr.wg.Done()
 			}
 		}()
 		gr.parse(input, make([]interface{}, 0))
@@ -224,6 +225,7 @@ func TestParseArray(t *testing.T) {
 			}
 
 			gr.Geo = append(gr.Geo, geo)
+			gr.wg.Done()
 		}
 	}()
 	gr.parseArray(inputs, make([]interface{}, 0))
@@ -240,7 +242,7 @@ func TestParseObject(t *testing.T) {
 			wg: &sync.WaitGroup{},
 			c:  make(chan Geo),
 		}
-		gr.wg.Add(len(expected))
+		gr.wg.Add(1)
 		go func() {
 			for {
 				geo, ok := <-gr.c
