@@ -59,18 +59,17 @@
 
         L.control.layers(basemaps.all).addTo(map);
 
-        function randomColor () {
-          return '#'+Math.floor(Math.random()*16777215).toString(16);
-        }
-
-        $scope.toggleGeo = function (id, arr) {
+        $scope.toggleGeo = function (item) {
           var color, layer;
+          var id = item.timestamp;
+          var arr = item.geo;
+          var body = JSON.parse(item.body);
 
           if (!features[id]) {
             features[id] = L.featureGroup();
 
             for (var i = 0; i < arr.length; i++) {
-              layer = createLayer(arr[i]);
+              layer = createLayer(arr[i], body);
               features[id].addLayer(layer);
             }
           }
@@ -83,11 +82,10 @@
           map.fitBounds(features[id].getBounds());
         };
 
-        function createLayer (obj) {
-          var layer;
-          var popup = '<pre>' + JSON.stringify(obj.geo, undefined, 2) + '</pre>';
+        function createLayer (obj, body) {
+          var content, layer;
           var shapeOptions = {
-            color: randomColor(),
+            color: randomishColor(),
             stroke: true,
             weight: 2,
             opacity: 0.8,
@@ -111,7 +109,13 @@
             });
           }
 
-          layer.bindPopup(popup);
+          if (obj.path.length) {
+            content = valueFromPath(body, obj.path);
+          } else {
+            content = body;
+          }
+
+          layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
           return layer;
         }
 
@@ -125,5 +129,30 @@
       }
     };
   }]);
+
+  // extra
+
+  function randomishColor () {
+    var a = '#'+Math.floor(Math.random()*16777215).toString(16);
+    var b = replace(a, 1);
+    var c = replace(b, 3);
+    var d = replace(c, 5);
+    console.log(d);
+    return d;
+  }
+
+  function replace (str, index) {
+    var c = (Math.floor(Math.random()*10) + 4).toString(16);
+    return str.substr(0, index) + c + str.substr(index + 1);
+  }
+
+  function valueFromPath (obj, arr) {
+    var a = arr.slice(0);
+    var k = a.shift();
+    if (a.length) {
+      return valueFromPath(obj[k], a);
+    }
+    return obj[k];
+  }
 
 })();

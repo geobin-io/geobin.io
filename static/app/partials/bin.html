@@ -11,7 +11,7 @@
           ng-if="isArray(item.geo)"
           ng-init="geoActive = false"
           ng-class="{'badge-success':geoActive}"
-          ng-click="toggleGeo(item.timestamp, item.geo); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
+          ng-click="toggleGeo(item); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
         <span class="pull-right badge"
           ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
       </div>
