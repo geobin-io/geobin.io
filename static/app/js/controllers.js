@@ -27,6 +27,11 @@
     var binId = $scope.binId = $routeParams.binId;
     document.title = 'Geobin | ' + binId;
     $scope.host = window.location.host;
+    var startTime = Infinity;
+
+    $scope.isNewReq = function (ts) {
+      return ts > startTime;
+    };
 
     $scope.isArray = function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
@@ -43,14 +48,22 @@
     };
 
     api.history(binId, function (data) {
-      $scope.history = data;
+      startTime = Math.floor(new Date().getTime() / 1000);
+      $scope.history = data.reverse();
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].geo) {
+          $scope.toggleGeo(data[i]);
+        }
+      }
     });
 
     api.ws(binId, function(event) {
+      $scope.isNew = true;
       try {
         var data = JSON.parse(event.data);
         $scope.$apply(function(){
-          $scope.history.unshift(data);
+          $scope.history.push(data);
+          $scope.toggleGeo(data);
         });
       } catch (e) {
         console.error('Invalid data received from websocket server');

@@ -133,6 +133,47 @@ body {
 .sidebar .panel>.panel-heading.open {
   background: #3bafda;
 }
+.sidebar .panel>.panel-heading.fadein {
+  -webkit-animation: fadein 4s; /* Safari and Chrome */
+     -moz-animation: fadein 4s; /* Firefox */
+      -ms-animation: fadein 4s; /* Internet Explorer */
+       -o-animation: fadein 4s; /* Opera */
+          animation: fadein 4s;
+}
+
+@keyframes fadein {
+  0%   { background: #3bdfaa; }
+  50%  { background: #3bdfaa; }
+  100% { background: #757D88; }
+}
+
+/* Firefox */
+@-moz-keyframes fadein {
+  0%   { background: #3bdfaa; }
+  50%  { background: #3bdfaa; }
+  100% { background: #757D88; }
+}
+
+/* Safari and Chrome */
+@-webkit-keyframes fadein {
+  0%   { background: #3bdfaa; }
+  50%  { background: #3bdfaa; }
+  100% { background: #757D88; }
+}
+
+/* Internet Explorer */
+@-ms-keyframes fadein {
+  0%   { background: #3bdfaa; }
+  50%  { background: #3bdfaa; }
+  100% { background: #757D88; }
+}
+
+/* Opera */
+@-o-keyframes fadein {
+  0%   { background: #3bdfaa; }
+  50%  { background: #3bdfaa; }
+  100% { background: #757D88; }
+}
 
 .sidebar pre {
   word-wrap: normal;
