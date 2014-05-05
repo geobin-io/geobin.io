@@ -38,19 +38,20 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		Geo:       make([]Geo, 0),
 	}
 
-	var js interface{}
-	if err := json.Unmarshal(body, &js); err != nil {
-		debugLog("No json found in request:", gr.Body)
-		return &gr
-	}
-
-	gr.Parse(js)
+	gr.Parse()
 
 	return &gr
 }
 
-func (gr *GeobinRequest) Parse(b interface{}) {
-	gr.parse(b, make([]interface{}, 0))
+// Parse parses `gr.Body` and fills `gr.Geo` with any geographic data it finds.
+func (gr *GeobinRequest) Parse() {
+	var js interface{}
+	if err := json.Unmarshal([]byte(gr.Body), &js); err != nil {
+		debugLog("No json found in request:", gr.Body)
+		return
+	}
+
+	gr.parse(js, make([]interface{}, 0))
 	gr.wg.Wait()
 }
 

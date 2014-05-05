@@ -113,9 +113,10 @@ func TestRequestWithMultipleObjects(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	runTest := func(input interface{}, expected []Geo) {
-		gr := &GeobinRequest{}
+		js, _ := json.Marshal(input)
+		gr := &GeobinRequest{Body: string(js)}
 
-		gr.Parse(input)
+		gr.Parse()
 
 		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}
