@@ -16,8 +16,8 @@ type GeobinRequest struct {
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
 	Geo       []Geo             `json:"geo,omitempty"`
-	wg        *sync.WaitGroup
-	c         chan Geo
+	wg        sync.WaitGroup
+	lk        sync.Mutex
 }
 
 type Geo struct {
@@ -36,8 +36,6 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		Headers:   headers,
 		Body:      string(body),
 		Geo:       make([]Geo, 0),
-		wg:        &sync.WaitGroup{},
-		c:         make(chan Geo),
 	}
 
 	var js interface{}
@@ -46,20 +44,8 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		return &gr
 	}
 
-	go func() {
-		for {
-			geo, ok := <-gr.c
-			if !ok {
-				return
-			}
-
-			gr.Geo = append(gr.Geo, geo)
-			gr.wg.Done()
-		}
-	}()
 	gr.parse(js, make([]interface{}, 0))
 	gr.wg.Wait()
-	close(gr.c)
 
 	return &gr
 }
@@ -75,16 +61,21 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 		case []interface{}:
 			verboseLog("parsing as array")
 			gr.parseArray(t, kp)
-			gr.wg.Done()
 		case map[string]interface{}:
 			verboseLog("parsing as object")
 			gr.parseObject(t, kp)
 		default:
 			verboseLog("unknown type:", reflect.TypeOf(t))
-			gr.wg.Done()
 		}
 		verboseLog("finished parsing:", b)
+		gr.wg.Done()
 	}()
+}
+
+func (gr *GeobinRequest) appendGeo(geo Geo) {
+	gr.lk.Lock()
+	defer gr.lk.Unlock()
+	gr.Geo = append(gr.Geo, geo)
 }
 
 // parseObject checks to see if the given map is GeoJSON or has geo data at the top level.
@@ -96,15 +87,14 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 			Path: kp,
 			Geo:  o,
 		}
-		gr.c <- g
+		gr.appendGeo(g)
 	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
 		geo.Path = kp
-		gr.c <- *geo
+		gr.appendGeo(*geo)
 	} else {
 		for k, v := range o {
 			gr.parse(v, append(kp, k))
 		}
-		gr.wg.Done()
 	}
 }
 

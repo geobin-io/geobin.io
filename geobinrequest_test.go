@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/bmizerany/assert"
@@ -114,26 +113,10 @@ func TestRequestWithMultipleObjects(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	runTest := func(input interface{}, expected []Geo) {
-		gr := GeobinRequest{
-			wg: &sync.WaitGroup{},
-			c:  make(chan Geo),
-		}
+		gr := &GeobinRequest{}
 
-		go func() {
-			for {
-				geo, ok := <-gr.c
-				if !ok {
-					debugLog("channel closed")
-					return
-				}
-
-				gr.Geo = append(gr.Geo, geo)
-				gr.wg.Done()
-			}
-		}()
 		gr.parse(input, make([]interface{}, 0))
 		gr.wg.Wait()
-		close(gr.c)
 
 		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}
@@ -190,10 +173,7 @@ func TestParse(t *testing.T) {
 
 func TestParseArray(t *testing.T) {
 	verboseLog("TestParseArray")
-	gr := GeobinRequest{
-		wg: &sync.WaitGroup{},
-		c:  make(chan Geo),
-	}
+	gr := &GeobinRequest{}
 
 	inputs := make([]interface{}, 0)
 	expected := make([]Geo, 0)
@@ -216,21 +196,8 @@ func TestParseArray(t *testing.T) {
 		})
 	}
 
-	go func() {
-		for {
-			geo, ok := <-gr.c
-			if !ok {
-				debugLog("channel closed")
-				return
-			}
-
-			gr.Geo = append(gr.Geo, geo)
-			gr.wg.Done()
-		}
-	}()
 	gr.parseArray(inputs, make([]interface{}, 0))
 	gr.wg.Wait()
-	close(gr.c)
 
 	testSlicesContainSameGeos(t, expected, gr.Geo)
 }
@@ -238,25 +205,9 @@ func TestParseArray(t *testing.T) {
 func TestParseObject(t *testing.T) {
 	runTest := func(input map[string]interface{}, expected []Geo, name string) {
 		debugLog("TestParseObject -", name)
-		gr := GeobinRequest{
-			wg: &sync.WaitGroup{},
-			c:  make(chan Geo),
-		}
-		gr.wg.Add(1)
-		go func() {
-			for {
-				geo, ok := <-gr.c
-				if !ok {
-					return
-				}
-
-				gr.Geo = append(gr.Geo, geo)
-				gr.wg.Done()
-			}
-		}()
+		gr := &GeobinRequest{}
 		gr.parseObject(input, make([]interface{}, 0))
 		gr.wg.Wait()
-		close(gr.c)
 
 		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}
