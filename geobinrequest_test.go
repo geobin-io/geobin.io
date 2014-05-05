@@ -38,7 +38,7 @@ Equal:
 
 func testSlicesContainSameItems(t *testing.T, a, b []interface{}) {
 	// If they aren't the same length, they don't have the same contents
-	assert.T(t, len(a) == len(b))
+	assert.Tf(t, len(a) == len(b), "Slices weren't the same length: \n%# v\n%# v\n", a, b)
 
 Equal:
 	for _, aVal := range a {
@@ -115,8 +115,7 @@ func TestParse(t *testing.T) {
 	runTest := func(input interface{}, expected []Geo) {
 		gr := &GeobinRequest{}
 
-		gr.parse(input, make([]interface{}, 0))
-		gr.wg.Wait()
+		gr.Parse(input)
 
 		testSlicesContainSameGeos(t, expected, gr.Geo)
 	}

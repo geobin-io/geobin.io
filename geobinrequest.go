@@ -44,10 +44,14 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		return &gr
 	}
 
-	gr.parse(js, make([]interface{}, 0))
-	gr.wg.Wait()
+	gr.Parse(js)
 
 	return &gr
+}
+
+func (gr *GeobinRequest) Parse(b interface{}) {
+	gr.parse(b, make([]interface{}, 0))
+	gr.wg.Wait()
 }
 
 // parse curries the parsing work off to parseObject or parseArray as needed depending
