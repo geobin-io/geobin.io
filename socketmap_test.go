@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -14,22 +15,28 @@ func (us unsubFunc) Unsubscribe(channels ...string) error {
 }
 
 type MockSocket struct {
+	lk       sync.Mutex
 	name     string
-	didWrite *bool
-	didClose *bool
+	didWrite bool
 }
 
 func (ms *MockSocket) Write(payload []byte) {
-	*ms.didWrite = true
+	ms.lk.Lock()
+	defer ms.lk.Unlock()
+	ms.didWrite = true
+}
+
+func (ms *MockSocket) getDidWrite() bool {
+	ms.lk.Lock()
+	defer ms.lk.Unlock()
+	return ms.didWrite
 }
 
 func (ms *MockSocket) GetName() string {
 	return ms.name
 }
 
-func (ms *MockSocket) Close() {
-	*ms.didClose = true
-}
+func (ms *MockSocket) Close() {}
 
 func TestNewSocketMap(t *testing.T) {
 	sm := NewSocketMap(getUnsubFunc(t))
@@ -77,8 +84,7 @@ func TestSend(t *testing.T) {
 	sm := NewSocketMap(getUnsubFunc(t))
 	err := sm.Send("bin_name", []byte("a message"))
 	assert.NotEqual(t, nil, err)
-	var didWrite bool = false
-	ms := &MockSocket{name: "mock_socket", didWrite: &didWrite}
+	ms := &MockSocket{name: "mock_socket"}
 
 	sm.Add("bin_name", "socket_uuid", ms)
 	err = sm.Send("unknown_bin_name", []byte("a message"))
@@ -87,7 +93,7 @@ func TestSend(t *testing.T) {
 	assert.Equal(t, nil, err)
 	// sleep a bit to allow go routines to be scheduled and run
 	time.Sleep(25 * time.Microsecond)
-	assert.Equal(t, true, didWrite)
+	assert.Equal(t, true, ms.getDidWrite())
 }
 
 func getUnsubFunc(t *testing.T) unsubFunc {
