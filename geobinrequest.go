@@ -54,6 +54,7 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 			}
 
 			gr.Geo = append(gr.Geo, geo)
+			gr.wg.Done()
 		}
 	}()
 	gr.parse(js, make([]interface{}, 0))
@@ -74,14 +75,15 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 		case []interface{}:
 			verboseLog("parsing as array")
 			gr.parseArray(t, kp)
+			gr.wg.Done()
 		case map[string]interface{}:
 			verboseLog("parsing as object")
 			gr.parseObject(t, kp)
 		default:
 			verboseLog("unknown type:", reflect.TypeOf(t))
+			gr.wg.Done()
 		}
 		verboseLog("finished parsing:", b)
-		gr.wg.Done()
 	}()
 }
 
@@ -102,6 +104,7 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 		for k, v := range o {
 			gr.parse(v, append(kp, k))
 		}
+		gr.wg.Done()
 	}
 }
 
