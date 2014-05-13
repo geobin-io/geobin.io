@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -60,6 +61,7 @@ func (gr *GeobinRequest) Parse() {
 // is recursive and is called from both parseObject and parseArray when necessary.
 func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 	verboseLog("starting goroutine to parse:", b)
+	verboseLog("goroutines:", runtime.NumGoroutine())
 	gr.wg.Add(1)
 	go func() {
 		switch t := b.(type) {
