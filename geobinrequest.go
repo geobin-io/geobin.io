@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -15,8 +17,8 @@ type GeobinRequest struct {
 	Headers   map[string]string `json:"headers"`
 	Body      string            `json:"body"`
 	Geo       []Geo             `json:"geo,omitempty"`
-	wg        *sync.WaitGroup
-	c         chan *Geo
+	wg        sync.WaitGroup
+	lk        sync.Mutex
 }
 
 type Geo struct {
@@ -35,45 +37,52 @@ func NewGeobinRequest(timestamp int64, headers map[string]string, body []byte) *
 		Headers:   headers,
 		Body:      string(body),
 		Geo:       make([]Geo, 0),
-		wg:        &sync.WaitGroup{},
-		c:         make(chan *Geo),
 	}
 
-	var js interface{}
-	if err := json.Unmarshal(body, &js); err != nil {
-		debugLog("No json found in request:", gr.Body)
-		return &gr
-	}
-
-	gr.wg.Add(1)
-	go gr.parse(js, make([]interface{}, 0))
-	go func() {
-		for {
-			geo, ok := <-gr.c
-			if !ok {
-				return
-			}
-
-			gr.Geo = append(gr.Geo, *geo)
-		}
-	}()
-	gr.wg.Wait()
-	close(gr.c)
+	gr.Parse()
 
 	return &gr
+}
+
+// Parse parses `gr.Body` and fills `gr.Geo` with any geographic data it finds.
+func (gr *GeobinRequest) Parse() {
+	var js interface{}
+	if err := json.Unmarshal([]byte(gr.Body), &js); err != nil {
+		debugLog("No json found in request:", gr.Body)
+		return
+	}
+
+	gr.parse(js, make([]interface{}, 0))
+	gr.wg.Wait()
 }
 
 // parse curries the parsing work off to parseObject or parseArray as needed depending
 // on the type of 'b' and signals to the WaitGroup when it has finished. This method
 // is recursive and is called from both parseObject and parseArray when necessary.
 func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
-	switch t := b.(type) {
-	case []interface{}:
-		gr.parseArray(t, kp)
-	case map[string]interface{}:
-		gr.parseObject(t, kp)
-	}
-	gr.wg.Done()
+	verboseLog("starting goroutine to parse:", b)
+	verboseLog("goroutines:", runtime.NumGoroutine())
+	gr.wg.Add(1)
+	go func() {
+		switch t := b.(type) {
+		case []interface{}:
+			verboseLog("parsing as array")
+			gr.parseArray(t, kp)
+		case map[string]interface{}:
+			verboseLog("parsing as object")
+			gr.parseObject(t, kp)
+		default:
+			verboseLog("unknown type:", reflect.TypeOf(t))
+		}
+		verboseLog("finished parsing:", b)
+		gr.wg.Done()
+	}()
+}
+
+func (gr *GeobinRequest) appendGeo(geo Geo) {
+	gr.lk.Lock()
+	defer gr.lk.Unlock()
+	gr.Geo = append(gr.Geo, geo)
 }
 
 // parseObject checks to see if the given map is GeoJSON or has geo data at the top level.
@@ -81,18 +90,17 @@ func (gr *GeobinRequest) parse(b interface{}, kp []interface{}) {
 // sending them back up to `parse` in a new goroutine.
 func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{}) {
 	if isGeojson(o) {
-		g := &Geo{
+		g := Geo{
 			Path: kp,
 			Geo:  o,
 		}
-		gr.c <- g
+		gr.appendGeo(g)
 	} else if foundGeo, geo := isOtherGeo(o); foundGeo {
 		geo.Path = kp
-		gr.c <- geo
+		gr.appendGeo(*geo)
 	} else {
 		for k, v := range o {
-			gr.wg.Add(1)
-			go gr.parse(v, append(kp, k))
+			gr.parse(v, append(kp, k))
 		}
 	}
 }
@@ -100,8 +108,7 @@ func (gr *GeobinRequest) parseObject(o map[string]interface{}, kp []interface{})
 // parseArray iterates over the given array calling `parse` with the item in a new goroutine.
 func (gr *GeobinRequest) parseArray(a []interface{}, kp []interface{}) {
 	for i, o := range a {
-		gr.wg.Add(1)
-		go gr.parse(o, append(kp, i))
+		gr.parse(o, append(kp, i))
 	}
 }
 

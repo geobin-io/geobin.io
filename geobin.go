@@ -17,6 +17,7 @@ var client = &redis.Client{}
 var pubsub = &redis.PubSub{}
 var socketMap SocketMap
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
+var isVerbose = flag.Bool("verbose", false, "Boolean flag indicates you want to see a lot of log messages.")
 
 func init() {
 	flag.Parse()
