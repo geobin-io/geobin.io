@@ -45,7 +45,7 @@
 
   // arrLength
   // ---------
-  // returns array length  ¯\_(ツ)_/¯
+  // returns array length
 
   .filter('arrLength', [function () {
     return function (obj) {
@@ -53,6 +53,17 @@
         return obj.length;
       }
       return 0;
+    };
+  }])
+
+  // reverse
+  // -------
+  // returns reversed array
+
+  .filter('reverse', [function() {
+    return function(arr) {
+      if (!arr || !arr.slice) { return arr; }
+      return arr.slice().reverse();
     };
   }])
 

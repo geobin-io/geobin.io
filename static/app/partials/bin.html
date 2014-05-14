@@ -3,15 +3,15 @@
     <div class="panel request-toggle"
       ng-if="!isEmpty(history)"
       ng-init="open = false"
-      ng-repeat="item in history track by $index"
+      ng-repeat="item in history | reverse"
       ng-class="{open: open}">
-      <div class="panel-heading" ng-class="{open: open}">
+      <div class="panel-heading" ng-class="{open: open, fadein: isNewReq(item.timestamp)}">
         <span class="detail-toggle" ng-click="open = !open">{{item.timestamp | prettyDate}}</span>
         <span class="pull-right badge geo-toggle"
           ng-if="isArray(item.geo)"
-          ng-init="geoActive = false"
+          ng-init="geoActive = true"
           ng-class="{'badge-success':geoActive}"
-          ng-click="toggleGeo(item.timestamp, item.geo); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
+          ng-click="toggleGeo(item); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
         <span class="pull-right badge"
           ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
       </div>
