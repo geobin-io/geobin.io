@@ -116,22 +116,18 @@ func TestBinHistoryWorksAsIntended(t *testing.T) {
 
 	// Post some stuff to the bin
 	payload := `{"lat": 10, "lng": -10}`
-	req, err := http.NewRequest("POST", "http://testing.geobin.io/"+binId, strings.NewReader(payload))
+
+	_, err = postToBin(binId, payload)
 	if err != nil {
 		t.Error(err)
 	}
-	req.Header.Add("Content-Type", "application/json")
-
-	w := httptest.NewRecorder()
-	binHandler(w, req)
 
 	// Check history for our bin
-	req, err = http.NewRequest("GET", "http://testing.geobin.io/api/1/history/"+binId, nil)
+	req, err := http.NewRequest("GET", "http://testing.geobin.io/api/1/history/"+binId, nil)
 	if err != nil {
 		t.Error(err)
 	}
-
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	historyHandler(w, req)
 
 	assertResponseOK(w, t)
@@ -261,4 +257,17 @@ func createBin() (string, error) {
 	}
 
 	return id.(string), nil
+}
+
+func postToBin(binId string, payload string) (*httptest.ResponseRecorder, error) {
+	req, err := http.NewRequest("POST", "http://testing.geobin.io/"+binId, strings.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	binHandler(w, req)
+
+	return w, nil
 }
