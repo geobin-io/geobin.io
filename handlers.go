@@ -137,11 +137,12 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 
 	var body []byte
 	if r.Body != nil {
-		body, err = ioutil.ReadAll(r.Body)
+		// Limit reading of the request body to the first 1MB (1<<20 bytes)
+		body, err = ioutil.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 		defer r.Body.Close()
 		if err != nil {
 			log.Println("Error while reading POST body:", err)
-			http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
