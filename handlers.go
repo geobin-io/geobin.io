@@ -33,6 +33,7 @@ func createRouter() *http.ServeMux {
 
 	// API routes
 	r.HandleFunc("/api/1/create", createHandler)
+	r.HandleFunc("/api/1/counts", countsHandler)
 	r.HandleFunc("/api/1/history/", historyHandler) // /api/1/history/{bin_id}
 	r.HandleFunc("/api/1/ws/", wsHandler)           // /api/1/ws/{bin_id}
 
@@ -80,6 +81,38 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Failure to create json for new name:", n, err)
 		http.Error(w, fmt.Sprintf("New Geobin created (%v) but we could not return the JSON for it!", n), http.StatusInternalServerError)
 		return
+	}
+}
+
+// countsHandler handles requests to /api/{v}/counts. It requires an array of binIds as input
+// and responds with a dictionary with the binIds as the key and the number of requests stored
+// in the db for that binId. If a binId is not found in the db, the value for that binId in the
+// response will be null.
+func countsHandler(w http.ResponseWriter, r *http.Request) {
+	debugLog("counts -", r.URL)
+
+	// get list of binIds from request body
+	var binIds []string
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&binIds); err != nil {
+		log.Println("Error marshalling request:", err)
+		http.Error(w, "Error marshalling request:", http.StatusBadRequest)
+	}
+
+	// look up each binId in db
+	counts := make(map[string]interface{})
+	for _, binId := range binIds {
+		if c, err := client.ZCount(binId, "-inf", "+inf").Result(); err == nil && c > 0 {
+			counts[binId] = c - 1
+		} else {
+			counts[binId] = nil
+		}
+	}
+
+	// return counts
+	if err := json.NewEncoder(w).Encode(counts); err != nil {
+		log.Println("Error encoding response:", err)
+		http.Error(w, "Error encoding response!", http.StatusInternalServerError)
 	}
 }
 
