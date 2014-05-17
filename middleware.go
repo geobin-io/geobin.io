@@ -25,7 +25,8 @@ func rateLimit(h http.HandlerFunc, requestsPerSec int) http.HandlerFunc {
 		if exists {
 			res, err := client.Get(key).Result()
 			if err != nil {
-				http.Error(w, "API Error", http.StatusInternalServerError)
+
+				http.Error(w, "API Error", http.StatusServiceUnavailable)
 				return
 			}
 
