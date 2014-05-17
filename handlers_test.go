@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 func TestCreateHandler(t *testing.T) {
@@ -147,6 +150,71 @@ func TestBinHistoryWorksAsIntended(t *testing.T) {
 	if payload != geo["body"].(string) {
 		t.Errorf("Expected: %s\nGot: %s", payload, geo["body"].(string))
 	}
+}
+
+func TestCountsWorksAsIntended(t *testing.T) {
+	bins, expected := createBins([]int{1, 0, 5, 23}, t)
+
+	verifyCounts(bins, expected, t)
+}
+
+func TestCountsWithInvalidBinId(t *testing.T) {
+	bins, expected := createBins([]int{1, 0, 2}, t)
+
+	bins = append(bins, "invalid")
+	expected["invalid"] = nil
+
+	verifyCounts(bins, expected, t)
+}
+
+func createBins(counts []int, t *testing.T) (binIds []string, expected map[string]interface{}) {
+	binIds = make([]string, len(counts))
+	expected = make(map[string]interface{})
+
+	// create the bins
+	for i, c := range counts {
+		binId, err := createBin()
+		if err != nil {
+			t.Error(err)
+		}
+
+		binIds[i] = binId
+		expected[binId] = float64(c)
+
+		// send the appropriate number of requests
+		for reqNum := 0; reqNum < c; reqNum++ {
+			req, err := http.NewRequest("POST", "http://testing.geobin.io/"+binId, strings.NewReader(fmt.Sprintf(`{"lat": 10, "lng": -10, "reqNum": %d}`, reqNum)))
+			if err != nil {
+				t.Error(err)
+			}
+			req.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			binHandler(w, req)
+			assertResponseOK(w, t)
+		}
+	}
+	return
+}
+
+func verifyCounts(bins []string, expected map[string]interface{}, t *testing.T) {
+	// make the request to the counts route
+	w := httptest.NewRecorder()
+	var binJson []byte
+	var err error
+	if binJson, err = json.Marshal(bins); err != nil {
+		t.Error(err)
+	}
+	req, err := http.NewRequest("POST", "http://testing.geobin.io/api/1/counts", strings.NewReader(string(binJson)))
+	if err != nil {
+		t.Error(err)
+	}
+	countsHandler(w, req)
+	assertResponseOK(w, t)
+
+	// verify the counts are correct
+	var got map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &got)
+	assert.Equal(t, expected, got)
 }
 
 /* Test Helpers */
