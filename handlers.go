@@ -13,6 +13,9 @@ import (
 	redis "github.com/vmihailenco/redis/v2"
 )
 
+// requests per second
+var limit = 1
+
 func createRouter() *http.ServeMux {
 	r := http.NewServeMux()
 
@@ -23,7 +26,7 @@ func createRouter() *http.ServeMux {
 			debugLog("web -", req.URL)
 			http.ServeFile(w, req, "static/app/index.html")
 		case "POST":
-			binHandler(w, req)
+			rateLimit(binHandler, limit)(w, req)
 		}
 	})
 	r.HandleFunc("/static/", func(w http.ResponseWriter, req *http.Request) {
@@ -32,10 +35,10 @@ func createRouter() *http.ServeMux {
 	})
 
 	// API routes
-	r.HandleFunc("/api/1/create", createHandler)
 	r.HandleFunc("/api/1/counts", countsHandler)
-	r.HandleFunc("/api/1/history/", historyHandler) // /api/1/history/{bin_id}
-	r.HandleFunc("/api/1/ws/", wsHandler)           // /api/1/ws/{bin_id}
+	r.HandleFunc("/api/1/create", rateLimit(createHandler, limit))
+	r.HandleFunc("/api/1/history/", rateLimit(historyHandler, limit)) // /api/1/history/{bin_id}
+	r.HandleFunc("/api/1/ws/", wsHandler)                             // /api/1/ws/{bin_id}
 
 	return r
 }
@@ -134,11 +137,12 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 
 	var body []byte
 	if r.Body != nil {
-		body, err = ioutil.ReadAll(r.Body)
+		// Limit reading of the request body to the first 1MB (1<<20 bytes)
+		body, err = ioutil.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 		defer r.Body.Close()
 		if err != nil {
 			log.Println("Error while reading POST body:", err)
-			http.Error(w, "Could not read POST body!", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
