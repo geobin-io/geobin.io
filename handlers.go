@@ -16,6 +16,7 @@ import (
 // requests per second
 var limit = 1
 
+// createRouter creates the http.HandleFunc to route requests to the handlers defined below.
 func createRouter() *http.ServeMux {
 	r := http.NewServeMux()
 
@@ -43,7 +44,16 @@ func createRouter() *http.ServeMux {
 	return r
 }
 
-// Creates a new bin
+// createHandler handles requests to /api/1/create. It creates a randomly generated bin_id,
+// creates an entry in redis for it, with a 48 hour expiration time and writes a json object
+// to the response with the following structure:
+//
+// `{
+//    "id": {bin_id},
+//    "expires": {expiration_timestamp}
+// }`
+//
+// The expiration timestamp is in Unix time (milis).
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("create -", r.URL)
 
@@ -87,7 +97,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// countsHandler handles requests to /api/{v}/counts. It requires an array of binIds as input
+// countsHandler handles requests to /api/1/counts. It requires an array of binIds as input
 // and responds with a dictionary with the binIds as the key and the number of requests stored
 // in the db for that binId. If a binId is not found in the db, the value for that binId in the
 // response will be null.
@@ -119,7 +129,9 @@ func countsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// log a request into a bin
+// binHandler handles requests to /api/1/{binId}. It requires a binId in the request path and some
+// JSON in the POST body. It creates a new GeobinRequest object using the body, which in turn
+// searches for any geo data in said JSON. It then adds the hydrated GeobinRequest to the database.
 func binHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("bin -", r.URL)
 	name := r.URL.Path[1:]
@@ -168,7 +180,9 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Get bin history
+// historyHandler handles requests to /api/v1/history/{bin_id}. It requires a bin_id in the
+// request path. It looks said bin_id up in the database and writes all of the GeobinRequests in
+// the database for that bin_id to the response as JSON.
 func historyHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("history -", r.URL)
 	path := strings.Split(r.URL.Path, "/")
@@ -211,7 +225,10 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Web socket connections
+// wsHandler handles requests to /api/1/ws/{bin_id}. It requires a bin_id in the request path
+// and it subscribes to listen for changes to the bin_id in redis. It creates a socket with
+// a UUID and adds that socket to the socketMap. It then sends any updates to the bin_id in
+// redis to the socket as they come in.
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("create -", r.URL)
 	path := strings.Split(r.URL.Path, "/")

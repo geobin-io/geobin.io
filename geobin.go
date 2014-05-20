@@ -1,3 +1,5 @@
+// Package geobin-go runs a web server which creates a geobin url that can receive geo data via POSTs and
+// visualizes it on a map.
 package main
 
 import (

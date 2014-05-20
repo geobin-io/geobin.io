@@ -1,6 +1,3 @@
-// Package socket wraps the `github.com/gorilla/websocket` package with a basic implementation
-// based on their sample code, with the goal of greatly reducing the interface for some generalized
-// use cases.
 package main
 
 import (
