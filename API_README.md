@@ -87,7 +87,7 @@ If any of the `bin_id`s are not found in the database the value for that `bin_id
 {"PF4C5zm67N":0,"foo":null}
 ```
 
-### /api/1/history/{bin_id}
+## /api/1/history/{bin_id}
 POSTs to this route return all of the stored requests for the specified bin.
 
 ### Input
