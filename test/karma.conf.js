@@ -5,6 +5,7 @@ module.exports = function(config){
       'static/app/components/angular/angular.js',
       'static/app/components/angular-route/angular-route.js',
       'static/app/components/angular-mocks/angular-mocks.js',
+      'static/app/components/tinystore/tinystore.min.js',
       'static/app/js/**/*.js',
       'test/unit/**/*.js'
     ],

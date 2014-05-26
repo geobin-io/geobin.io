@@ -2,6 +2,7 @@
 
 /* jasmine specs for services go here */
 
+/* There is no 'version' service.
 describe('service', function() {
   beforeEach(module('Geobin.services'));
 
@@ -12,3 +13,4 @@ describe('service', function() {
     }));
   });
 });
+*/

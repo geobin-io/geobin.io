@@ -6,6 +6,7 @@ describe('controllers', function(){
   var $scope, $location, $rootScope, createController;
 
   beforeEach(module('Geobin.controllers'));
+  beforeEach(module('Geobin.services'));
 
   beforeEach(inject(function($injector){
     $location = $injector.get('$location');

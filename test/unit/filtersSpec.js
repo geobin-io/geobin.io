@@ -2,9 +2,9 @@
 
 /* jasmine specs for filters go here */
 
+/* Not sure what this was supposed to be testing...
 describe('filter', function() {
   beforeEach(module('Geobin.filters'));
-
 
   describe('interpolate', function() {
     beforeEach(module(function($provide) {
@@ -16,3 +16,4 @@ describe('filter', function() {
     }));
   });
 });
+*/
