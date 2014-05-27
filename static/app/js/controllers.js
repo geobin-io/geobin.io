@@ -3,14 +3,15 @@
   // Controllers
   angular.module('Geobin.controllers', [])
 
-  .controller('NavCtrl', ['$scope', '$rootScope', 'api', 'store', function ($scope, $rootScope, api, store) {
-    $scope.host = window.location.host;
-    $scope.pathname = window.location.pathname.substr(1);
+  // Nav controller
+  .controller('NavCtrl', ['$scope', '$rootScope', '$location', 'api', 'store', function ($scope, $rootScope, $location, api, store) {
+    $scope.host = $location.host();
+    $scope.pathname = $location.path().substr(1);
     $scope.bins = store.local.session.history;
     $scope.create = api.create;
 
     $scope.$on('$locationChangeSuccess', function (event, args) {
-      $scope.pathname = window.location.pathname.substr(1);
+      $scope.pathname = $location.path().substr(1);
     });
   }])
 
@@ -23,14 +24,14 @@
   }])
 
   // Bin controller
-  .controller('BinCtrl', ['$scope', '$routeParams', 'api', function ($scope, $routeParams, api) {
+  .controller('BinCtrl', ['$scope', '$routeParams', '$location', 'api', function ($scope, $routeParams, $location, api) {
     var binId = $scope.binId = $routeParams.binId;
     document.title = 'Geobin | ' + binId;
-    $scope.host = window.location.host;
-    var startTime = Infinity;
+    $scope.host = $location.host();
+    $scope.startTime = Infinity;
 
     $scope.isNewReq = function (ts) {
-      return ts > startTime;
+      return ts > $scope.startTime;
     };
 
     $scope.isArray = function (obj) {
@@ -48,7 +49,7 @@
     };
 
     api.history(binId, function (data) {
-      startTime = Math.floor(new Date().getTime() / 1000);
+      $scope.startTime = Math.floor(new Date().getTime() / 1000);
       $scope.history = data.reverse();
       for (var i = 0; i < data.length; i++) {
         if (data[i].geo) {
