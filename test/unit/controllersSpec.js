@@ -70,6 +70,7 @@ describe('controllers', function(){
       var BinCtrl = createController('BinCtrl', {"binId": 'test'});
       expect(BinCtrl).toBeDefined();
     });
+
     it('should get the binId from the routeParams', function() {
       var BinCtrl = createController('BinCtrl', {"binId": 'test'});
       expect($scope.binId).toBe('test');
