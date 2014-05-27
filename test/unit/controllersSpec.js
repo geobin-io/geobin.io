@@ -81,6 +81,7 @@ describe('controllers', function(){
     });
 
     it('should fetch the history for the given binId', inject(function(api) {
+      // TODO: If we ever upgrade jasmine to 2.0, this needs to change to 'and.callFake'
       spyOn(api, 'history').andCallFake(function(binId, callback) {
         expect(binId).toBe('test');
         // TODO: call the callback with some history data
