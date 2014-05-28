@@ -2,15 +2,22 @@
 
 /* jasmine specs for services go here */
 
-/* There is no 'version' service.
-describe('service', function() {
+describe('basemaps', function() {
   beforeEach(module('Geobin.services'));
 
+  var basemaps;
+  beforeEach(function() {
+    inject(function($injector) {
+      basemaps = $injector.get('basemaps');
+    });
+  });
 
-  describe('version', function() {
-    it('should return current version', inject(function(version) {
-      expect(version).toEqual('0.0.0');
-    }));
+  it('should create some basemaps', function() {
+    expect(basemaps.all).toBeDefined();
+  });
+
+  it('should have a valid default basemap', function() {
+    expect(basemaps.def).toBeDefined();
+    expect(basemaps.all[basemaps.def]).toBeDefined();
   });
 });
-*/
