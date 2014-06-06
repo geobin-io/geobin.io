@@ -29,7 +29,7 @@
       }
 
       // default to seconds
-      return diff + 'seconds';
+      return diff + ' seconds';
     };
   }])
 
