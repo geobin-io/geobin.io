@@ -30,6 +30,7 @@ describe('controllers', function(){
       expect($scope.create).toBeDefined();
       expect($scope.bins).toBeDefined();
       expect($scope.enabled).toBeDefined();
+      expect($scope.counts).toBeDefined();
     });
 
   });

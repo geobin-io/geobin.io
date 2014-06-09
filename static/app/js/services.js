@@ -94,11 +94,11 @@
 
     this.create = function () {
       $http.post('/api/' + apiVersion + '/create', {})
-      .success(function createSuccess (data, status, headers, config) {
-        store.local.session.history.push(data);
-        store.local.save();
-        $location.path('/' + data.id);
-      });
+        .success(function createSuccess (data, status, headers, config) {
+          store.local.session.history.push(data);
+          store.local.save();
+          $location.path('/' + data.id);
+        });
     };
 
     // History
@@ -112,11 +112,27 @@
 
     this.history = function (binId, callback) {
       $http.post('/api/' + apiVersion + '/history/' + binId, {})
-      .success(function historySuccess (data, status, headers, config) {
-        if (status === 200) {
-          callback(data);
-        }
-      });
+        .success(function historySuccess (data, status, headers, config) {
+          if (status === 200) {
+            callback(data);
+          }
+        });
+    };
+
+    // Counts
+    // -------
+    // POST to /api/{apiVersion}/counts
+    // * expects to receive a JSON encoded array of bin IDs
+    // * expects to get back an object with binId keys and count values
+    //   where count is the number of requests made to that bin
+
+    this.counts = function (binIds, callback) {
+      $http.post('/api/' + apiVersion + '/counts', binIds)
+        .success(function countsSuccess (data, status, headers, config) {
+          if (status === 200) {
+            callback(data);
+          }
+        });
     };
 
     // Sockets

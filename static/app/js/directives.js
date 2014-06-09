@@ -137,7 +137,6 @@
     var b = replace(a, 1);
     var c = replace(b, 3);
     var d = replace(c, 5);
-    console.log(d);
     return d;
   }
 

@@ -56,6 +56,9 @@ describe('api', function() {
       body: 'narf',
       geo: []
     });
+    $httpBackend.when('POST', '/api/1/counts').respond({
+      testId: 1
+    });
     api = $injector.get('api');
     store = $injector.get('store');
   }));
@@ -88,6 +91,28 @@ describe('api', function() {
 
       expect($location.path()).toBe('/testId');
     }));
+  });
+
+  describe('counts', function() {
+    it('should post to /api/1/counts', function() {
+      $httpBackend.expectPOST('/api/1/counts');
+      api.counts(['testId'], function(data){});
+      $httpBackend.flush();
+    });
+
+    it('should return counts data on success', function() {
+      var mock = {
+        callback: function(data) {
+          expect(data).toBeDefined();
+          expect(data.testId).toBe(1);
+        }
+      };
+      spyOn(mock, 'callback').andCallThrough();
+
+      api.counts(['testId'], mock.callback);
+      $httpBackend.flush();
+      expect(mock.callback).toHaveBeenCalled();
+    });
   });
 
   describe('history', function() {
