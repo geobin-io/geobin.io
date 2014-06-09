@@ -35,10 +35,6 @@
         L.esri.basemapLayer('ShadedRelief'),
         L.esri.basemapLayer('ShadedReliefLabels')
       ]);
-      var mapattack = L.tileLayer('http://mapattack-tiles-{s}.pdx.esri.com/dark/{z}/{y}/{x}', {
-        maxZoom: 18,
-        subdomains: '0123'
-      });
 
       this.all = {
         'Streets': streets,
@@ -48,8 +44,7 @@
         'Gray': gray,
         'Dark Gray': darkgray,
         'Imagery': imagery,
-        'Shaded Relief': shadedrelief,
-        'Map Attack': mapattack
+        'Shaded Relief': shadedrelief
       };
 
       this.def = 'Map Attack';

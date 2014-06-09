@@ -24,8 +24,8 @@
   }])
 
   // Bin controller
-  .controller('BinCtrl', ['$scope', '$routeParams', '$location', 'api', function ($scope, $routeParams, $location, api) {
-    var binId = $scope.binId = $routeParams.binId;
+  .controller('BinCtrl', ['$scope', '$stateParams', '$location', 'api', function ($scope, $stateParams, $location, api) {
+    var binId = $scope.binId = $stateParams.binId;
     document.title = 'Geobin | ' + binId;
     $scope.host = $location.host();
     $scope.startTime = Infinity;
