@@ -4,16 +4,18 @@
   angular.module('Geobin.controllers', [])
 
   // Nav controller
-  .controller('NavCtrl', ['$scope', '$rootScope', '$location', 'api', 'store', function ($scope, $rootScope, $location, api, store) {
-    $scope.host = $location.host();
-    $scope.pathname = $location.path().substr(1);
-    $scope.bins = store.local.session.history;
-    $scope.create = api.create;
-
-    $scope.$on('$locationChangeSuccess', function (event, args) {
+  .controller('NavCtrl', ['$scope', '$location', 'api', 'store',
+    function ($scope, $location, api, store) {
+      $scope.host = $location.host();
       $scope.pathname = $location.path().substr(1);
-    });
-  }])
+      $scope.bins = store.local.session.history;
+      $scope.create = api.create;
+
+      $scope.$on('$locationChangeSuccess', function (event, args) {
+        $scope.pathname = $location.path().substr(1);
+      });
+    }
+  ])
 
   // Home controller
   .controller('HomeCtrl', ['$scope', 'api', 'store', function ($scope, api, store) {
@@ -21,6 +23,16 @@
     $scope.create = api.create;
     $scope.bins = store.local.session.history;
     $scope.enabled = store.local.enabled;
+    var binIds = [];
+    $scope.counts = {};
+
+    for (var b = 0; b < $scope.bins.length; b++) {
+      binIds.push($scope.bins[b].id);
+    }
+
+    api.counts(binIds, function(counts) {
+      $scope.counts = counts;
+    });
   }])
 
   // Bin controller
