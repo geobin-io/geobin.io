@@ -1,7 +1,3 @@
-'use strict';
-
-/* jasmine specs for services go here */
-
 describe('basemaps', function() {
   beforeEach(module('Geobin.services'));
 
@@ -39,7 +35,7 @@ describe('store', function() {
 
   it('should start with a default basemap', function() {
     // TODO: Figure out how to inject the default and test against that.
-    expect(store.local.session.basemap).toBe('Map Attack');
+    expect(store.local.session.basemap).toBe('Streets');
   });
 
 });

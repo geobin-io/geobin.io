@@ -47,7 +47,7 @@
         'Shaded Relief': shadedrelief
       };
 
-      this.def = 'Map Attack';
+      this.def = 'Streets';
     };
 
     this.init();

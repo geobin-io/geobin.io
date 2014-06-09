@@ -15,11 +15,26 @@ module.exports = function(config){
     plugins: [
       'karma-chrome-launcher',
       'karma-firefox-launcher',
-      'karma-jasmine'
+      'karma-jasmine',
+      'karma-coverage',
+      'karma-mocha-reporter'
     ],
     junitReporter: {
       outputFile: 'test_out/unit.xml',
       suite: 'unit'
+    },
+    reporters: ['mocha', 'coverage'],
+    preprocessors: {
+      // source files, that you wanna generate coverage for
+      // do not include tests or libraries
+      // (these files will be instrumented by Istanbul)
+      'static/app/js/*.js': ['coverage']
+    },
+    coverageReporter: {
+      reporters:[
+        {type: 'html', dir:'coverage/'},
+        {type: 'text'}
+      ]
     }
   });
 };
