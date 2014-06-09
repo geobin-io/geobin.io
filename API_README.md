@@ -1,4 +1,4 @@
-# Geobin API Documentation
+# Geobin API v1 Documentation
 To hit any of these endpoints you must send a POST request. All GET requests will be routed to the web server.
 
 ## /{bin_id}
@@ -7,7 +7,7 @@ POSTs to this endpoint to send data to the specified bin.
 ### Input
 POST to this endpoint the data you'd like to have visualized. This can be any arbitrary JSON formatted data.
 Geobin will process the posted JSON data and find any geo data it can and store what it found and where in
-the database so that it can be visualized with the web frontend. 
+the database so that it can be visualized with the web frontend.
 
 It currently will detect geo data in the following formats:
 
@@ -64,7 +64,7 @@ The expiration timestamp is in Unix time (milis).
 
 ## /api/1/counts
 POST to this endpoint with a list of binIDs to get a map of the given binIDs to the number of requests stored
-in that bin. 
+in that bin.
 
 ### Input
 The POST to this endpoint should include a JSON array of binIDs to get counts for.

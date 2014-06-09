@@ -65,7 +65,7 @@
           </thead>
           <tbody>
             <tr ng-repeat="item in bins track by $index">
-              <td><a href="/{{item.id}}">{{item.id}}</a></td>
+              <td><a ui-sref="bin({binId: item.id})">{{item.id}}</a></td>
               <td class="text-center">0</td>
               <td class="text-right">{{item.expires | timeRemaining}} left</td>
             </tr>

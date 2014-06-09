@@ -1,7 +1,7 @@
 (function(){
 
   angular.module('Geobin', [
-    'ngRoute',
+    'ui.router',
     'Geobin.filters',
     'Geobin.services',
     'Geobin.directives',
@@ -9,19 +9,24 @@
     'chieffancypants.loadingBar'
   ])
 
-  .config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
-    $locationProvider.html5Mode(true);
+  .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+    function ($locationProvider, $stateProvider, $urlRouterProvider) {
+      $locationProvider.html5Mode(true);
 
-    $routeProvider
-      .when('/', {
-        controller: 'HomeCtrl',
-        templateUrl: '/static/app/partials/home.html'
-      })
-      .when('/:binId', {
-        controller: 'BinCtrl',
-        templateUrl: '/static/app/partials/bin.html'
-      })
-      .otherwise({redirectTo: '/'});
-  }]);
+      $urlRouterProvider.otherwise('/');
+
+      $stateProvider
+       .state('home', {
+         url: '/',
+         controller: 'HomeCtrl',
+         templateUrl: '/static/app/partials/home.html'
+       })
+       .state('bin', {
+         url: '/:binId',
+         controller: 'BinCtrl',
+         templateUrl: '/static/app/partials/bin.html'
+       });
+    }
+  ]);
 
 })();

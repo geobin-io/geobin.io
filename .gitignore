@@ -7,3 +7,4 @@ node_modules/
 static/app/components/
 geobin-go.test
 debug.out
+coverage/

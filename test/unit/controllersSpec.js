@@ -1,7 +1,3 @@
-'use strict';
-
-/* jasmine specs for controllers go here */
-
 describe('controllers', function(){
   var $scope, $location, $rootScope, createController;
 
@@ -15,10 +11,10 @@ describe('controllers', function(){
 
     var $controller = $injector.get('$controller');
 
-    createController = function(name, routeParams) {
+    createController = function(name, stateParams) {
       return $controller(name, {
         '$scope': $scope,
-        '$routeParams': routeParams
+        '$stateParams': stateParams
       });
     };
   }));
@@ -71,7 +67,7 @@ describe('controllers', function(){
       expect(BinCtrl).toBeDefined();
     });
 
-    it('should get the binId from the routeParams', function() {
+    it('should get the binId from the stateParams', function() {
       var BinCtrl = createController('BinCtrl', {"binId": 'test'});
       expect($scope.binId).toBe('test');
     });

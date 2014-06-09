@@ -1,7 +1,3 @@
-'use strict';
-
-/* jasmine specs for directives go here */
-
 // Mock of leaflet... or at least the pieces of Leaflet needed to run these tests :P
 var L = {
   Map: function(id, opt) {
