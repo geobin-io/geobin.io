@@ -6,7 +6,7 @@
   // Nav controller
   .controller('NavCtrl', ['$scope', '$location', 'api', 'store',
     function ($scope, $location, api, store) {
-      $scope.host = $location.host();
+      $scope.host = window.location.host;
       $scope.pathname = $location.path().substr(1);
       $scope.bins = store.local.session.history;
       $scope.create = api.create;
@@ -39,7 +39,7 @@
   .controller('BinCtrl', ['$scope', '$stateParams', '$location', 'api', function ($scope, $stateParams, $location, api) {
     var binId = $scope.binId = $stateParams.binId;
     document.title = 'Geobin | ' + binId;
-    $scope.host = $location.host();
+    $scope.host = window.location.host;
     $scope.startTime = Infinity;
 
     $scope.isNewReq = function (ts) {
