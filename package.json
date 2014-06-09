@@ -15,7 +15,7 @@
   "scripts": {
     "postinstall": "./node_modules/bower/bin/bower install",
 
-    "start": "./node_modules/http-server/bin/http-server app -p 8000",
+    "start": "make run",
     "test": "./node_modules/karma/bin/karma start test/karma.conf.js --single-run",
 
     "update-webdriver": "webdriver-manager update",
