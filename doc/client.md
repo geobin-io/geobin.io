@@ -1,32 +1,34 @@
-# geobin-client
+# Geobin Client
 
 Browser client for Geobin.
 
 ### Install Dependencies
 
-We have two kinds of dependencies in this project: tools and angular framework code.
-The tools help us manage and test the application.
+We have two kinds of dependencies in this project: tools and angular framework code.  The tools help
+us manage and test the application.
 
 * We get the tools we depend upon via `npm`, the [node package manager][npm].
 * We get the angular code via `bower`, a [client-side code package manager][bower].
 
 We have preconfigured `npm` to automatically run `bower` so we can simply do:
 
-```
+```bash
 npm install
 ```
 
-Behind the scenes this will also call `./node_modules/bower/bin/bower install`.
-You should find that you have two new folders in your project.
+Behind the scenes this will also call `bower install`.  You should find that you have two new
+folders in your project.
 
 * `/node_modules` - contains the npm packages for the tools we need
 * `/static/app/components` - contains the angular framework files
 
 ### Run the Application
 
-`make run`
+```bash
+make run
+```
 
-Now browse to the app at `http://localhost:8080/` (you can also run `npm run browse`).
+Now browse to the app at `http://localhost:8080/`.
 
 ## Directory Layout
 
@@ -68,7 +70,7 @@ configuration file to run them.
 
 The easiest way to run the unit tests is to use the supplied npm script:
 
-```
+```bash
 npm test
 ```
 
@@ -81,7 +83,7 @@ You can also ask Karma to do a single run of the tests and then exit.  This is u
 check that a particular version of the code is operating as expected.  The project contains a
 predefined script to do this:
 
-```
+```bash
 npm run test-forever
 ```
 
@@ -98,14 +100,14 @@ Protractor simulates interaction with our web app and verifies that the applicat
 correctly. Therefore, our web server needs to be serving up the application, so that Protractor
 can interact with it.
 
-```
+```bash
 npm start
 ```
 
 In addition, since Protractor is built upon WebDriver we need to install this.  The angular-seed
 project comes with a predefined script to do this:
 
-```
+```bash
 npm run update-webdriver
 ```
 
@@ -114,7 +116,7 @@ This will download and install the latest version of the stand-alone WebDriver t
 Once you have ensured that the development web server hosting our application is up and running
 and WebDriver is updated, you can run the end-to-end tests using the supplied npm script:
 
-```
+```bash
 npm run e2e
 ```
 
@@ -123,9 +125,13 @@ development server.
 
 ## Updating Angular
 
+Previously we recommended that you merge in changes to angular-seed into your own fork of the project.
+Now that the angular framework library code and tools are acquired through package managers (npm and
+bower) you can use these tools instead to update the dependencies.
+
 You can update the tool dependencies by running:
 
-```
+```bash
 npm update
 ```
 
@@ -133,7 +139,7 @@ This will find the latest versions that match the version ranges specified in th
 
 You can update the Angular dependencies by running:
 
-```
+```bash
 bower update
 ```
 
