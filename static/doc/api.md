@@ -32,7 +32,9 @@ It currently will detect geo data in the following formats:
 ### Example
 
 ```sh
-> curl -X POST http://localhost:8080/PF4C5zm67N -d '{"lat": 10, "lng": -10}' -i
+> curl -X POST http://localhost:8080/PF4C5zm67N \
+  -d '{"lat": 10, "lng": -10}' -i
+
 HTTP/1.1 200 OK
 Date: Mon, 19 May 2014 22:38:53 GMT
 Content-Length: 0

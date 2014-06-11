@@ -16,6 +16,8 @@
     "Bootflat": "~2.0.1",
     "esri-leaflet": "~0.0.1-beta.4-patch-1",
     "leaflet-dist": "~0.7.2",
-    "angular-ui-router": "~0.2.10"
+    "angular-ui-router": "~0.2.10",
+    "angular-md": "~1.0.0",
+    "marked": "~0.3.2"
   }
 }
