@@ -8,3 +8,4 @@ static/app/components/
 geobin-go.test
 debug.out
 coverage/
+config.json
