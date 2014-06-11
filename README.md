@@ -10,10 +10,9 @@ You can also receive data in real time. As long as your browser supports [WebSoc
 
 We look for [valid](http://geojsonlint.com) [GeoJSON]. If no GeoJSON is detected, we'll also look for the following properties:
 
-<ul>
-<li>__Latitude &amp; Longitude__
+### Latitude & Longitude
 
-_expected format:_
+* expected format:
 
 ```javascript
 {
@@ -22,26 +21,22 @@ _expected format:_
 }
 ```
 
-_accepted keys:_
+* accepted keys:
+  * Latitude:
+    * `lat`
+    * `latitude`
+    * `y`
+  * Longitude:
+    * `lng`
+    * `lon`
+    * `long`
+    * `longitude`
+    * `x`
 
-* __Latitude__: 
 
-	* `lat`
-	* `latitude`
-	* `y`
+### Radius (in meters)
 
-* __Longitude__:
-
-	* `lng`
-	* `lon`
-	* `long`
-	* `longitude`
-	* `x`
-</li>
-
-<li>__Radius__ (in meters)
-
-_expected format:_
+* expected format:
 
 ```javascript
 {
@@ -51,20 +46,18 @@ _expected format:_
 }
 ```
 
-_accepted keys:_
+* accepted keys:
+  * `dst`
+  * `dist`
+  * `distance`
+  * `rad`
+  * `radius`
+  * `acc`
+  * `accuracy`
 
-* `dst`
-* `dist`
-* `distance`
-* `rad`
-* `radius`
-* `acc`
-* `accuracy`
-</li>
+### Coordinates
 
-<li>__Coordinates__ 
-
-_expected format:_
+* expected format:
 
 ```javascript
 {
@@ -72,58 +65,56 @@ _expected format:_
 }
 ```
 
-_accepted keys:_
-
-* `geo`
-* `loc`
-* `location`
-* `coord`
-* `coordinate`
-* `coords`
-* `coordinates`
-
-</li>
-</ul>
+* accepted keys:
+  * `geo`
+  * `loc`
+  * `location`
+  * `coord`
+  * `coordinate`
+  * `coords`
+  * `coordinates`
 
 ## Running Geobin locally
 
 Here is the short version of how to get Geobin up and running locally, assuming you have a functional [go] environment already set up on your machine.
 
-<ol>
-<li>`go get` Geobin.
+### 1. `go get` Geobin
 
 ```bash
 > go get github.com/geoloqi/geobin-go
 ```
-</li>
 
-<li>Run the setup scripts.
+### 2. Run the setup scripts
 
 ```bash
 > cd $GOPATH/src/github.com/geoloqi/geobin-go
 > make setup # (runs `go get -t` and `npm install`)
 ```
-</li>
 
-<li>Run the server
+### 3. Run the server
 
 ```bash
 > make run
 ```
-</li>
 
-<li>You're up and running, have fun! Try opening http://localhost:8080 in a browser and clicking the "Create a New Geobin" button. Then run the following in a console while keeping an eye on your browser:
+You're up and running, have fun! Try opening http://localhost:8080 in a browser and clicking the "Create a New Geobin" button. Then run the following in a console while keeping an eye on your browser:
+
 ```bash
-> curl -i -X POST -H "Content-Type: application/json" -d @gtCallback.json http://localhost:8080/BIN_ID`
+> curl -i -X POST \
+-H "Content-Type: application/json" \
+-d @gtCallback.json http://localhost:8080/BIN_ID`
 ```
-</li>
 
-For more details, see the [server], [client], and/or [API] docs.
+## Documentation
 
-[GeoJSON]: http://geojson.org/geojson-spec.html 
+* [Server]
+* [Client]
+* [API]
+
+[GeoJSON]: http://geojson.org/geojson-spec.html
 [WebSockets]: http://caniuse.com/websockets
 [RequestBin]: http://requestb.in
 [go]: http://golang.org
-[server]: doc/server.md
-[client]: doc/client.md
+[Server]: doc/server.md
+[Client]: doc/client.md
 [API]: doc/api.md
