@@ -115,6 +115,6 @@ You're up and running, have fun! Try opening http://localhost:8080 in a browser 
 [WebSockets]: http://caniuse.com/websockets
 [RequestBin]: http://requestb.in
 [go]: http://golang.org
-[Server]: doc/server.md
-[Client]: doc/client.md
-[API]: doc/api.md
+[Server]: static/doc/server.md
+[Client]: static/doc/client.md
+[API]: static/doc/api.md
