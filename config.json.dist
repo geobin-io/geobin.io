@@ -1,17 +1,9 @@
 {
-  // The http host to listen on
   "Host": "localhost",
-  // The http port to listen on
   "Port": 8080,
-  // The redis host (with port)
   "RedisHost": "127.0.0.1:6379",
-  // The redis password
   "RedisPass": "",
-  // The redis db to connect to
   "RedisDB": 0,
-
-  // The set of valid characters to be used in the randomly generated binIDs.
   "NameVals": "023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
-  // The number of chars to be used in each binID.
   "NameLength": 10
 }
