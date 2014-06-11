@@ -36,10 +36,23 @@ func createRouter() *http.ServeMux {
 	})
 
 	// API routes
-	r.HandleFunc("/api/1/counts", countsHandler)
-	r.HandleFunc("/api/1/create", rateLimit(createHandler, limit))
-	r.HandleFunc("/api/1/history/", rateLimit(historyHandler, limit)) // /api/1/history/{bin_id}
-	r.HandleFunc("/api/1/ws/", wsHandler)                             // /api/1/ws/{bin_id}
+	// this wraps all of the API routes and checks to see if the request is a POST, if it's not, it forwards the request to the angular app
+	apiRoute := func(h func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+		return func(w http.ResponseWriter, req *http.Request) {
+			switch req.Method {
+			case "POST":
+				h(w, req)
+			case "GET":
+				debugLog("api (GET) -", req.URL)
+				http.ServeFile(w, req, "static/app/index.html")
+			}
+		}
+	}
+
+	r.HandleFunc("/api/1/counts", apiRoute(countsHandler))
+	r.HandleFunc("/api/1/create", apiRoute(rateLimit(createHandler, limit)))
+	r.HandleFunc("/api/1/history/", apiRoute(rateLimit(historyHandler, limit))) // /api/1/history/{bin_id}
+	r.HandleFunc("/api/1/ws/", apiRoute(wsHandler))                             // /api/1/ws/{bin_id}
 
 	return r
 }
