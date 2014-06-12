@@ -1,0 +1,34 @@
+<div class="panel">
+  <div class="panel-heading">
+    <a ui-sref="bin.list({id:binId})">back to list</a>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-heading">Request Headers</div>
+  <ul class="list-group">
+    <div ng-repeat="(k, v) in item.headers" class="list-group-item">
+      {{k}}: {{v}}
+    </div>
+  </ul>
+</div>
+
+<div class="panel">
+  <div class="panel-heading">Request Body</div>
+  <ul class="list-group">
+    <li class="list-group-item">
+      <p>body</p>
+      <pre>{{item.body | prettyJson}}</pre>
+    </li>
+  </ul>
+</div>
+
+<div class="panel">
+  <div class="panel-heading">Found Geographic Data</div>
+  <ul ng-if="item.geo" class="list-group">
+    <li class="list-group-item">
+      <p>geo</p>
+      <pre>{{item.geo | prettyJson}}</pre>
+    </li>
+  </ul>
+</div>

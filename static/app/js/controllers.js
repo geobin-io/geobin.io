@@ -86,6 +86,35 @@
     $scope.$on('$destroy', function binCtrlDestroy () {
       api.close(binId);
     });
-  }]);
+  }])
+
+  .controller('BinListCtrl', ['$scope',
+    function ($scope) {
+      console.log('list', $scope);
+    }
+  ])
+  .controller('BinRequestCtrl', ['$scope', '$stateParams',
+    function ($scope, $stateParams) {
+      $scope.item = updateItem();
+      $scope.$watch('history', function(){
+        if ($scope.isEmpty($scope.item)) {
+          $scope.item = updateItem();
+        }
+      });
+
+      function updateItem () {
+        if (!$scope.history) {
+          return {};
+        }
+        for (var i = 0, len = $scope.history.length; i < len; i++) {
+          var j = parseInt($scope.history[i].timestamp, 10);
+          var k = parseInt($stateParams.timestamp, 10);
+          if (j && j === k) {
+            return $scope.history[i];
+          }
+        }
+      }
+    }
+  ]);
 
 })();
