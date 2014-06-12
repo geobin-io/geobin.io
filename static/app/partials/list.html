@@ -1,0 +1,32 @@
+<div class="panel request-toggle"
+  ng-if="!isEmpty(history)"
+  ng-repeat="item in history | reverse">
+  <div class="panel-heading" ng-class="{fadein: isNewReq(item.timestamp)}">
+    <a class="detail-toggle" ui-sref="bin.request({timestamp: item.timestamp})">{{item.timestamp | prettyDate}}</a>
+    <span class="pull-right badge geo-toggle"
+      ng-if="isArray(item.geo)"
+      ng-init="geoActive = true"
+      ng-class="{'badge-success':geoActive}"
+      ng-click="toggleGeo(item); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
+    <span class="pull-right badge"
+      ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
+  </div>
+</div>
+
+<div class="panel"
+  ng-if="isEmpty(history)">
+  <div class="panel-heading">
+    <h4>No History Yet</h4>
+    <p>Try sending a request!</p>
+  </div>
+
+  <ul class="list-group">
+    <li class="list-group-item">
+      <p>Example using <a href="http://en.wikipedia.org/wiki/CURL">cURL</a>:</p>
+      <pre>curl -X POST \
+-H "Content-Type: application/json" \
+-d '{"lat":34,"lng":-120,"rad":9000}' \
+{{host}}/{{binId}}</pre>
+    </li>
+  </ul>
+</div>

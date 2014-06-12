@@ -14,32 +14,51 @@
     function ($locationProvider, $stateProvider, $urlRouterProvider) {
       $locationProvider.html5Mode(true);
 
-      $urlRouterProvider.when(/^\/api.*/, '/doc/api');
+      // Redirects
+      $urlRouterProvider.when(/^\/api(.*)?/, '/doc/api');
       $urlRouterProvider.otherwise('/');
 
+      // Route Configuration
       $stateProvider
-       .state('home', {
-         url: '/',
-         controller: 'HomeCtrl',
-         templateUrl: '/static/app/partials/home.html'
-       })
-       .state('api', {
-         url: '/doc/api',
-         templateUrl: '/static/app/partials/doc/api.html'
-       })
-       .state('client', {
-         url: '/doc/client',
-         templateUrl: '/static/app/partials/doc/client.html'
-       })
-       .state('server', {
-         url: '/doc/server',
-         templateUrl: '/static/app/partials/doc/server.html'
-       })
-       .state('bin', {
-         url: '/:binId',
-         controller: 'BinCtrl',
-         templateUrl: '/static/app/partials/bin.html'
-       });
+
+        // Index
+        .state('home', {
+          url: '/',
+          controller: 'HomeCtrl',
+          templateUrl: '/static/app/partials/home.html'
+        })
+
+        // Documentation routes
+        .state('api', {
+          url: '/doc/api',
+          templateUrl: '/static/app/partials/doc/api.html'
+        })
+        .state('client', {
+          url: '/doc/client',
+          templateUrl: '/static/app/partials/doc/client.html'
+        })
+        .state('server', {
+          url: '/doc/server',
+          templateUrl: '/static/app/partials/doc/server.html'
+        })
+
+        // Bin routes
+        .state('bin', {
+          abstract: true,
+          url: '/:binId',
+          controller: 'BinCtrl',
+          templateUrl: '/static/app/partials/bin.html'
+        })
+          .state('bin.list', {
+            url: '',
+            templateUrl: '/static/app/partials/list.html',
+            controller: 'BinListCtrl'
+          })
+          .state('bin.request', {
+            url: '/request/:timestamp',
+            templateUrl: '/static/app/partials/request.html',
+            controller: 'BinRequestCtrl'
+          });
     }
   ]);
 
