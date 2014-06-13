@@ -1,4 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Oxygen:400,700,300);
+@import url(http://fonts.googleapis.com/css?family=Oxygen+Mono);
 
 html, body {
   background: #F5F7FA;
@@ -111,13 +112,19 @@ body {
   overflow-x: hidden;
   overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
   background-color: #434A54;
-  width: 420px;
+  width: 520px;
+}
+
+/* request list */
+.request-list {
+  font-family: 'Oxygen Mono', monospace;
 }
 
 .sidebar .list-group-item {
   background: #656D78;
   color: #fff;
   border-color: #434A54;
+  padding: 10px;
 }
 
 .sidebar .panel .list-group-item:first-child {
@@ -181,6 +188,12 @@ body {
   border-color: #656D78;
   color: #F5F7FA;
 }
+.sidebar pre:last-child {
+  margin-bottom: 0;
+}
+.sidebar .panel {
+  background: none;
+}
 
 .request-toggle {
   background-color: transparent;
@@ -222,7 +235,7 @@ body {
   top: 51px;
   right: 0;
   bottom: 40px;
-  left: 420px;
+  left: 520px;
   z-index: 1000;
 }
 

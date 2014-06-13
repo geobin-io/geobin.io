@@ -1,16 +1,39 @@
-<div class="panel request-toggle"
-  ng-if="!isEmpty(history)"
-  ng-repeat="item in history | reverse">
-  <div class="panel-heading" ng-class="{fadein: isNewReq(item.timestamp)}">
-    <a class="detail-toggle" ui-sref="bin.request({timestamp: item.timestamp})">{{item.timestamp | prettyDate}}</a>
-    <span class="pull-right badge geo-toggle"
-      ng-if="isArray(item.geo)"
-      ng-init="geoActive = true"
-      ng-class="{'badge-success':geoActive}"
-      ng-click="toggleGeo(item); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
-    <span class="pull-right badge"
-      ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
-  </div>
+<div class="request-list" ng-if="!isEmpty(history)">
+  <ul class="list-group">
+    <li class="list-group-item request-list-item clearfix"
+      ng-repeat="item in history | reverse"
+      ng-class="{fadein: isNewReq(item.timestamp)}">
+
+      <div class="btn-group">
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="date request was received">
+          <i class="glyphicon glyphicon-calendar"></i>
+          {{item.timestamp | prettyDate}}
+        </div>
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="time request was received">
+          <i class="glyphicon glyphicon-time"></i>
+          {{item.timestamp | prettyTime}}
+        </div>
+        <button type="button" class="btn btn-info"
+          ng-disabled="!isArray(item.geo)"
+          ng-init="geoActive = true"
+          ng-click="toggleGeo(item); geoActive = !geoActive;"
+          data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+          <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
+          <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+          {{item.geo | arrLength}}
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-info pull-right"
+        data-toggle="tooltip" data-placement="bottom" title="details"
+        ui-sref="bin.request({timestamp: item.timestamp})">
+        Details
+        <i class="glyphicon glyphicon-chevron-right"></i>
+      </button>
+    </li>
+  </ul>
 </div>
 
 <div class="panel" ng-if="validBin && isEmpty(history)">

@@ -95,7 +95,7 @@
 
   .controller('BinListCtrl', ['$scope',
     function ($scope) {
-      console.log('list', $scope);
+      // console.log('list', $scope);
     }
   ])
   .controller('BinRequestCtrl', ['$scope', '$stateParams',

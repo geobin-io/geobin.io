@@ -1,8 +1,37 @@
-<div class="panel">
-  <div class="panel-heading">
-    <a ui-sref="bin.list({id:binId})">back to list</a>
-  </div>
-</div>
+<ul class="list-group request-list">
+  <li class="list-group-item clearfix">
+
+    <div class="btn-group btn-group">
+      <div class="btn"
+        data-toggle="tooltip" data-placement="bottom" title="date request was received">
+        <i class="glyphicon glyphicon-calendar"></i>
+        {{item.timestamp | prettyDate}}
+      </div>
+      <div class="btn"
+        data-toggle="tooltip" data-placement="bottom" title="time request was received">
+        <i class="glyphicon glyphicon-time"></i>
+        {{item.timestamp | prettyTime}}
+      </div>
+      <button type="button" class="btn btn-info pull-left"
+        ng-disabled="!isArray(item.geo)"
+        ng-init="geoActive = true"
+        ng-click="toggleGeo(item); geoActive = !geoActive;"
+        data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+        <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
+        <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+        {{item.geo | arrLength}}
+      </button>
+    </div>
+
+    <button type="button" class="btn btn-info pull-right"
+      data-toggle="tooltip" data-placement="bottom" title="details"
+      ui-sref="bin.list({id:binId})">
+      <i class="glyphicon glyphicon-chevron-left"></i>
+      Back to List
+    </button>
+
+  </li>
+</ul>
 
 <div class="panel">
   <div class="panel-heading">Request Headers</div>
@@ -17,17 +46,15 @@
   <div class="panel-heading">Request Body</div>
   <ul class="list-group">
     <li class="list-group-item">
-      <p>body</p>
       <pre>{{item.body | prettyJson}}</pre>
     </li>
   </ul>
 </div>
 
-<div class="panel">
+<div ng-if="item.geo" class="panel">
   <div class="panel-heading">Found Geographic Data</div>
-  <ul ng-if="item.geo" class="list-group">
+  <ul class="list-group">
     <li class="list-group-item">
-      <p>geo</p>
       <pre>{{item.geo | prettyJson}}</pre>
     </li>
   </ul>
