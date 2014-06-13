@@ -52,7 +52,7 @@ func createRouter() *http.ServeMux {
 	r.HandleFunc("/api/1/counts", apiRoute(countsHandler))
 	r.HandleFunc("/api/1/create", apiRoute(rateLimit(createHandler, limit)))
 	r.HandleFunc("/api/1/history/", apiRoute(rateLimit(historyHandler, limit))) // /api/1/history/{bin_id}
-	r.HandleFunc("/api/1/ws/", apiRoute(wsHandler))                             // /api/1/ws/{bin_id}
+	r.HandleFunc("/api/1/ws/", wsHandler)                                       // /api/1/ws/{bin_id}
 
 	return r
 }
