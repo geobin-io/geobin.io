@@ -15,23 +15,33 @@
           <i class="glyphicon glyphicon-time"></i>
           {{item.timestamp | prettyTime}}
         </div>
-        <button type="button" class="btn btn-info"
-          ng-disabled="!isArray(item.geo)"
-          ng-init="geoActive = true"
-          ng-click="toggleGeo(item); geoActive = !geoActive;"
-          data-toggle="tooltip" data-placement="bottom" title="toggle geo">
-          <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
-          <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
-          {{item.geo | arrLength}}
-        </button>
       </div>
 
-      <button type="button" class="btn btn-info pull-right"
-        data-toggle="tooltip" data-placement="bottom" title="details"
-        ui-sref="bin.request({timestamp: item.timestamp})">
-        Details
-        <i class="glyphicon glyphicon-chevron-right"></i>
-      </button>
+      <div class="pull-right"
+        ng-init="geoActive = true">
+        <div class="btn-group">
+          <button type="button" class="btn btn-info"
+            ng-if="isArray(item.geo)"
+            ng-disabled="!geoActive"
+            ng-click="zoomTo(item)">
+            <i class="glyphicon glyphicon-search"></i>
+          </button>
+          <button type="button" class="btn btn-info"
+            ng-disabled="!isArray(item.geo)"
+            ng-click="toggleGeo(item); geoActive = !geoActive;"
+            data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+            <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
+            <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+            {{item.geo | arrLength}}
+          </button>
+        </div>
+        <button type="button" class="btn btn-info"
+          data-toggle="tooltip" data-placement="bottom" title="details"
+          ui-sref="bin.request({timestamp: item.timestamp})">
+          Details
+          <i class="glyphicon glyphicon-chevron-right"></i>
+        </button>
+      </div>
     </li>
   </ul>
 </div>
