@@ -60,12 +60,17 @@
       return true;
     };
 
+    $scope.create = api.create;
+
     api.history(binId, function (data) {
-      $scope.startTime = Math.floor(new Date().getTime() / 1000);
-      $scope.history = data.reverse();
-      for (var i = 0; i < data.length; i++) {
-        if (data[i].geo) {
-          $scope.toggleGeo(data[i]);
+      $scope.validBin = (data !== undefined);
+      if ($scope.validBin) {
+        $scope.startTime = Math.floor(new Date().getTime() / 1000);
+        $scope.history = data.reverse();
+        for (var i = 0; i < data.length; i++) {
+          if (data[i].geo) {
+            $scope.toggleGeo(data[i]);
+          }
         }
       }
     });
