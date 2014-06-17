@@ -76,6 +76,12 @@
     };
   }])
 
+  .filter('toKilobytes', [function () {
+    return function (str) {
+      return (parseInt(str, 10) / 1024).toFixed(3);
+    };
+  }])
+
   // reverse
   // -------
   // returns reversed array

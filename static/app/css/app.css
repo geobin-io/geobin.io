@@ -130,15 +130,20 @@ body {
 .sidebar .panel .list-group-item:first-child {
   border-top: none;
 }
-
+.panel-heading:last-child {
+  border-radius: 4px;
+}
 .sidebar .panel>.panel-heading {
   background: #757D88;
   border-color: #434A54;
   color: #fff;
-  text-align: center;
+  /*text-align: center;*/
 }
-.sidebar .panel>.panel-heading.open {
-  background: #3bafda;
+.sidebar .panel>.panel-heading.toggle-content {
+  cursor: pointer;
+}
+.sidebar .request-item .panel>.panel-heading {
+  background: #37bc9b;
 }
 .sidebar .panel>.panel-heading.fadein {
   -webkit-animation: fadein 4s; /* Safari and Chrome */

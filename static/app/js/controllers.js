@@ -73,7 +73,6 @@
           }
         }
       }
-      $scope.zoomToAll();
     });
 
     api.ws(binId, function(event) {
