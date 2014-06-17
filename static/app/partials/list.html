@@ -13,8 +13,7 @@
   </div>
 </div>
 
-<div class="panel"
-  ng-if="isEmpty(history)">
+<div class="panel" ng-if="validBin && isEmpty(history)">
   <div class="panel-heading">
     <h4>No History Yet</h4>
     <p>Try sending a request!</p>
@@ -29,4 +28,11 @@
 {{host}}/{{binId}}</pre>
     </li>
   </ul>
+</div>
+
+<div class="panel" ng-if="!validBin">
+  <div class="panel-heading">
+    <h4>No bin found with ID "{{binId}}"</h4>
+    <p>Would you like to <button type="button" class="btn btn-primary" ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button></p>
+  </div>
 </div>

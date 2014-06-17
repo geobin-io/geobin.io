@@ -116,6 +116,11 @@
           if (status === 200) {
             callback(data);
           }
+        })
+        .error(function historyError (data, status, headers, config) {
+          if (status === 404) {
+            callback();
+          }
         });
     };
 
