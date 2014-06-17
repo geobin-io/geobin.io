@@ -109,7 +109,7 @@ You're up and running, have fun! Try opening http://localhost:8080 in a browser 
 ```bash
 > curl -i -X POST \
 -H "Content-Type: application/json" \
--d @gtCallback.json http://localhost:8080/BIN_ID`
+-d @gtCallback.json http://localhost:8080/BIN_ID
 ```
 
 ## Documentation
