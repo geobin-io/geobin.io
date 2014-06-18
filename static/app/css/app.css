@@ -251,3 +251,8 @@ body {
   bottom: 0;
   left: 0;
 }
+
+.leaflet-popup-content pre {
+  max-height: 260px;
+  overflow-y: scroll;
+}

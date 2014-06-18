@@ -27,7 +27,7 @@
         $element.removeAttr('id');
         $element.append('<div id=' + $attrs.id + '></div>');
         return function (scope, element, attrs, controller) {
-          // TODO: move toggling of geo to a centralized object
+          // @TODO: move toggling of geo to a centralized object
           // this will allow all shapes to be on by default
           // and incoming geojson from websockets to be added on the fly
           // scope.$watch('geo', function (newCenter, oldCenter) {});
@@ -144,22 +144,32 @@
               obj.radius,
               shapeOptions
             );
+
+            if (obj.path.length) {
+              content = valueFromPath(body, obj.path);
+            } else {
+              content = body;
+            }
+
+            layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
           } else {
             layer = L.geoJson(obj.geo, {
               style: function () {
                 return shapeOptions;
+              },
+              onEachFeature: function (feature, layer) {
+                if (body.type === 'FeatureCollection') {
+                  content = feature;
+                } else if (obj.path.length) {
+                  content = valueFromPath(body, obj.path);
+                } else {
+                  content = body;
+                }
+                layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
               }
             });
           }
 
-          // @TODO use onEachFeature for popups if geometry is GeoJSON
-          if (obj.path.length) {
-            content = valueFromPath(body, obj.path);
-          } else {
-            content = body;
-          }
-
-          layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
           return layer;
         }
 
