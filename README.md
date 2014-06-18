@@ -81,13 +81,13 @@ Here is the short version of how to get Geobin up and running locally, assuming 
 ### 1. `go get` Geobin
 
 ```bash
-> go get github.com/geoloqi/geobin-go
+> go get github.com/esripdx/geobin.io
 ```
 
 ### 2. Run the setup scripts
 
 ```bash
-> cd $GOPATH/src/github.com/geoloqi/geobin-go
+> cd $GOPATH/src/github.com/esripdx/geobin.io
 > make setup # (runs `go get -t` and `npm install`)
 ```
 

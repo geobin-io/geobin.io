@@ -5,8 +5,8 @@ The Geobin server hosts the Geobin [web client] as well as the [API]. It is writ
 ## Setup
 
 ```bash
-> go get github.com/geoloqi/geobin-go
-> cd $GOPATH/src/github.com/geoloqi/geobin-go
+> go get github.com/esripdx/geobin.io
+> cd $GOPATH/src/github.com/esripdx/geobin.io
 > make setup # (runs `go get -t` and `npm install`)
 > cp config.json.dist config.json
 ```
