@@ -4,8 +4,7 @@ language: go
 
 install:
 #  - go get -t
-  - npm install -g bower
-  - bower install
+  - npm install
 
 script:
 # - go test -v ./...

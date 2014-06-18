@@ -10,7 +10,7 @@
     "angular-loading-bar": "~0.3.0",
     "tinystore": "~0.0.4",
     "Bootflat": "~2.0.1",
-    "esri-leaflet": "~0.0.1-beta.4-patch-1",
+    "esri-leaflet": "~0.0.1-beta.5",
     "leaflet-dist": "~0.7.2",
     "angular-ui-router": "~0.2.10",
     "angular-md": "~1.0.0",
