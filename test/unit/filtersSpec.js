@@ -32,10 +32,26 @@ describe('filters', function() {
   });
 
   describe('prettyDate', function() {
-    it('should turn a unix timestamp into a localized date/time string', inject(function(prettyDateFilter) {
+    it('should turn a unix timestamp into a localized date string', inject(function(prettyDateFilter) {
       var d = new Date();
       var ts = Math.floor(d.getTime()/1000);
-      expect(prettyDateFilter(ts)).toBe(d.toLocaleString());
+      expect(prettyDateFilter(ts)).toBe(d.toLocaleDateString());
+    }));
+  });
+
+  describe('prettyTime', function() {
+    it('should turn a unix timestamp into a localized time string', inject(function(prettyTimeFilter) {
+      var d = new Date();
+      var ts = Math.floor(d.getTime()/1000);
+      expect(prettyTimeFilter(ts)).toBe(d.toLocaleTimeString());
+    }));
+  });
+
+  describe('prettyDateTime', function() {
+    it('should turn a unix timestamp into a localized time string', inject(function(prettyDateTimeFilter) {
+      var d = new Date();
+      var ts = Math.floor(d.getTime()/1000);
+      expect(prettyDateTimeFilter(ts)).toBe(d.toLocaleString());
     }));
   });
 
