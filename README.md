@@ -78,7 +78,13 @@ We look for [valid](http://geojsonlint.com) [GeoJSON]. If no GeoJSON is detected
 
 ## Running Geobin locally
 
-Here is the short version of how to get Geobin up and running locally, assuming you have a functional [go] environment and [redis] server already set up on your machine.
+Requirements:
+
+* [go]
+* [node]
+* [redis]
+
+Here is the short version of how to get Geobin up and running locally, assuming you have a functional [go] environment, [node] environment, and [redis] server already set up on your machine.
 
 ### 1. `go get` Geobin
 
@@ -128,3 +134,4 @@ You're up and running, have fun! Try opening http://localhost:8080 in a browser 
 [Client]: static/doc/client.md
 [API]: static/doc/api.md
 [redis]: http://redis.io
+[node]: http://nodejs.org
