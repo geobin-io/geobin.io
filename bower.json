@@ -1,9 +1,5 @@
 {
-  "name": "geobin",
-  "description": "Inspect HTTP requests with geographic data",
-  "version": "1.0.0",
-  "homepage": "https://github.com/esripdx/geobin.io",
-  "license": "MIT",
+  "name": "geobin.io",
   "private": true,
   "dependencies": {
     "angular": "1.2.x",
