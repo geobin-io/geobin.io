@@ -136,19 +136,20 @@ describe('api', function() {
       expect(mock.callback).toHaveBeenCalled();
     });
 
-    it('should not run the callback function when given an invalid id', function() {
+    it('should pass no arguments to callback function when given an invalid id', function() {
       $httpBackend.when('POST', '/api/1/history/testMissingId').respond(404);
       $httpBackend.expectPOST('/api/1/history/testMissingId');
 
       var mock = {
         callback: function(data) {
+          expect(data).toBeUndefined();
         }
       };
       spyOn(mock, 'callback');
 
       api.history('testMissingId', mock.callback);
       $httpBackend.flush();
-      expect(mock.callback).not.toHaveBeenCalled();
+      expect(mock.callback).toHaveBeenCalled();
     });
   });
 

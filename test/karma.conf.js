@@ -3,7 +3,7 @@ module.exports = function(config){
     basePath: '../',
     files: [
       'static/app/components/angular/angular.js',
-      'static/app/components/angular-route/angular-route.js',
+      'static/app/components/angular-ui-router/release/angular-ui-router.js',
       'static/app/components/angular-mocks/angular-mocks.js',
       'static/app/components/tinystore/tinystore.min.js',
       'static/app/js/**/*.js',
@@ -11,10 +11,11 @@ module.exports = function(config){
     ],
     autoWatch: true,
     frameworks: ['jasmine'],
-    browsers: ['Chrome'],
+    browsers: ['Chrome','Firefox','PhantomJS'],
     plugins: [
       'karma-chrome-launcher',
       'karma-firefox-launcher',
+      'karma-phantomjs-launcher',
       'karma-jasmine',
       'karma-coverage',
       'karma-mocha-reporter'
