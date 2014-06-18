@@ -1,0 +1,9 @@
+language: go
+
+install:
+  - go get -t
+  - npm install
+
+script:
+  - go test -v ./...
+  - npm test
