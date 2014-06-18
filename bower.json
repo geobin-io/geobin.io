@@ -17,8 +17,8 @@
     "marked": "~0.3.2"
   },
   "resolutions": {
-    "angular-mocks": "~1.2.15",
     "marked": "~0.3.2",
-    "angular": "1.2.x"
+    "angular": "1.2.x",
+    "angular-mocks": "1.2.10"
   }
 }
