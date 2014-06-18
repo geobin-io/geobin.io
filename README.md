@@ -1,5 +1,7 @@
 # Geobin
 
+[![Build Status](https://travis-ci.org/esripdx/geobin.io.svg?branch=master)](https://travis-ci.org/esripdx/geobin.io)
+
 _It's like [RequestBin], but for geographic data._
 
 Geobin allows you to create a temporary URL to collect and inspect JSON requests with geographic data. Inspect the headers and body of a request and view any geographic data parsed out of the body on a map.
