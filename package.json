@@ -1,7 +1,7 @@
 {
   "name": "geobin",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Inspect HTTP requests with geographic data",
   "repository": "https://github.com/geoloqi/geobin-go",
   "license": "MIT",
