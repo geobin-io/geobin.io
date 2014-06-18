@@ -37,7 +37,27 @@
   // ----------
   // turns a unix timestamp into a localized date and time string
 
+  .filter('prettyTime', [function () {
+    return function (ts) {
+      return new Date(ts * 1000).toLocaleTimeString();
+    };
+  }])
+
+  // prettyDate
+  // ----------
+  // turns a unix timestamp into a localized date and time string
+
   .filter('prettyDate', [function () {
+    return function (ts) {
+      return new Date(ts * 1000).toLocaleDateString();
+    };
+  }])
+
+  // prettyDateTime
+  // --------------
+  // turns a unix timestamp into a localized date and time string
+
+  .filter('prettyDateTime', [function () {
     return function (ts) {
       return new Date(ts * 1000).toLocaleString();
     };
@@ -53,6 +73,12 @@
         return obj.length;
       }
       return 0;
+    };
+  }])
+
+  .filter('toKilobytes', [function () {
+    return function (str) {
+      return (parseInt(str, 10) / 1024).toFixed(3);
     };
   }])
 

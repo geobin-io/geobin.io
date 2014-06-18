@@ -1,7 +1,7 @@
 {
   "name": "geobin",
   "description": "Inspect HTTP requests with geographic data",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "homepage": "https://github.com/geoloqi/geobin-go",
   "license": "MIT",
   "private": true,
@@ -10,7 +10,7 @@
     "angular-loader": "1.2.x",
     "angular-mocks": "~1.2.15",
     "bootstrap": "~3.1.1",
-    "fontawesome": "~4.0.3",
+    "fontawesome": "~4.1.0",
     "angular-loading-bar": "~0.3.0",
     "tinystore": "~0.0.4",
     "Bootflat": "~2.0.1",

@@ -62,4 +62,12 @@
     }
   ]);
 
+  // temporary tooltip workaround
+  // @TODO: replace jquery/bootstrap elements w/ angularUI
+  // http://angular-ui.github.io/bootstrap/
+  // $('body').tooltip({
+  //     container: 'body',
+  //     selector: '[data-toggle=tooltip]'
+  // });
+
 })();

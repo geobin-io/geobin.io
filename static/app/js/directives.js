@@ -27,7 +27,7 @@
         $element.removeAttr('id');
         $element.append('<div id=' + $attrs.id + '></div>');
         return function (scope, element, attrs, controller) {
-          // TODO: move toggling of geo to a centralized object
+          // @TODO: move toggling of geo to a centralized object
           // this will allow all shapes to be on by default
           // and incoming geojson from websockets to be added on the fly
           // scope.$watch('geo', function (newCenter, oldCenter) {});
@@ -54,11 +54,15 @@
 
         // declare our map
         var map = new L.Map($attrs.id, mapOptions);
-        var features = [];
+        var features = {};
         var layers = {};
 
         L.control.layers(basemaps.all).addTo(map);
 
+        /**
+         * toggle a geobin request object's geometry on the map
+         * @param  {Object} item - geobin request object
+         */
         $scope.toggleGeo = function (item) {
           var color, layer;
           var id = item.timestamp;
@@ -68,7 +72,7 @@
           if (!features[id]) {
             features[id] = L.featureGroup();
 
-            for (var i = 0; i < arr.length; i++) {
+            for (var i = 0, len = arr.length; i < len; i++) {
               layer = createLayer(arr[i], body);
               features[id].addLayer(layer);
             }
@@ -79,9 +83,48 @@
           }
 
           map.addLayer(features[id]);
+        };
+
+        /**
+         * get bounds of all layers in features[] and fit map to total extent
+         */
+        $scope.zoomToAll = function () {
+          var extent;
+
+          for (var obj in features) {
+            if (!features.hasOwnProperty(obj)) {
+              continue;
+            }
+
+            var bounds = features[obj].getBounds();
+
+            if (!extent) {
+              extent = L.latLngBounds(bounds);
+            } else {
+              extent.extend(bounds);
+            }
+          }
+
+          if (extent) {
+            map.fitBounds(extent);
+          }
+        };
+
+        /**
+         * zoom to bounds of geobin request object
+         * @param  {Object} item - geobin request object
+         */
+        $scope.zoomTo = function (item) {
+          var id = item.timestamp;
           map.fitBounds(features[id].getBounds());
         };
 
+        /**
+         * create leaflet layer from geobin request object
+         * @param  {Object} obj - geobin request object
+         * @param  {Object} body - request body
+         * @return {Object} leaflet layer
+         */
         function createLayer (obj, body) {
           var content, layer;
           var shapeOptions = {
@@ -101,21 +144,32 @@
               obj.radius,
               shapeOptions
             );
+
+            if (obj.path.length) {
+              content = valueFromPath(body, obj.path);
+            } else {
+              content = body;
+            }
+
+            layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
           } else {
             layer = L.geoJson(obj.geo, {
               style: function () {
                 return shapeOptions;
+              },
+              onEachFeature: function (feature, layer) {
+                if (body.type === 'FeatureCollection') {
+                  content = feature;
+                } else if (obj.path.length) {
+                  content = valueFromPath(body, obj.path);
+                } else {
+                  content = body;
+                }
+                layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
               }
             });
           }
 
-          if (obj.path.length) {
-            content = valueFromPath(body, obj.path);
-          } else {
-            content = body;
-          }
-
-          layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
           return layer;
         }
 

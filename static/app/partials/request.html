@@ -1,34 +1,99 @@
-<div class="panel">
-  <div class="panel-heading">
-    <a ui-sref="bin.list({id:binId})">back to list</a>
-  </div>
-</div>
+<ul class="list-group request-list">
+  <li class="list-group-item clearfix">
 
-<div class="panel">
-  <div class="panel-heading">Request Headers</div>
-  <ul class="list-group">
-    <div ng-repeat="(k, v) in item.headers" class="list-group-item">
-      {{k}}: {{v}}
+    <div class="btn-group btn-group">
+      <div class="btn"
+        data-toggle="tooltip" data-placement="bottom" title="time request was received">
+        <i class="glyphicon glyphicon-time"></i>
+        {{item.timestamp | prettyTime}}
+      </div>
+      <div class="btn"
+        data-toggle="tooltip" data-placement="bottom" title="date request was received">
+        <i class="glyphicon glyphicon-calendar"></i>
+        {{item.timestamp | prettyDate}}
+      </div>
     </div>
-  </ul>
-</div>
 
-<div class="panel">
-  <div class="panel-heading">Request Body</div>
-  <ul class="list-group">
-    <li class="list-group-item">
-      <p>body</p>
-      <pre>{{item.body | prettyJson}}</pre>
-    </li>
-  </ul>
-</div>
+    <div class="pull-right"
+        ng-init="geoActive = true">
+      <div class="btn-group">
+        <button type="button" class="btn btn-info"
+          ng-if="isArray(item.geo)"
+          ng-disabled="!geoActive"
+          ng-click="zoomTo(item)">
+          <i class="glyphicon glyphicon-search"></i>
+        </button>
+        <button type="button" class="btn btn-info"
+          ng-disabled="!isArray(item.geo)"
+          ng-click="toggleGeo(item); geoActive = !geoActive;"
+          data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+          <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
+          <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+          {{item.geo | arrLength}}
+        </button>
+      </div>
 
-<div class="panel">
-  <div class="panel-heading">Found Geographic Data</div>
-  <ul ng-if="item.geo" class="list-group">
-    <li class="list-group-item">
-      <p>geo</p>
-      <pre>{{item.geo | prettyJson}}</pre>
-    </li>
-  </ul>
+      <button type="button" class="btn btn-info"
+        data-toggle="tooltip" data-placement="bottom" title="details"
+        ui-sref="bin.list({id:binId})">
+        <i class="glyphicon glyphicon-chevron-left"></i>
+        List
+      </button>
+    </div>
+
+  </li>
+</ul>
+
+<div class="request-item">
+
+  <div class="panel"
+    ng-init="showHeaders = true">
+    <div class="panel-heading toggle-content"
+      ng-click="showHeaders = !showHeaders">
+      <i ng-if="!showHeaders" class="glyphicon glyphicon-chevron-right"></i>
+      <i ng-if="showHeaders" class="glyphicon glyphicon-chevron-down"></i>
+      Request Headers
+    </div>
+    <ul class="list-group"
+      ng-if="showHeaders">
+      <div ng-repeat="(k, v) in item.headers" class="list-group-item">
+        {{k}}: {{v}}
+      </div>
+    </ul>
+  </div>
+
+  <div class="panel"
+    ng-init="showReqBody = false">
+    <div class="panel-heading toggle-content"
+      ng-click="showReqBody = !showReqBody">
+      <i ng-if="!showReqBody" class="glyphicon glyphicon-chevron-right"></i>
+      <i ng-if="showReqBody" class="glyphicon glyphicon-chevron-down"></i>
+      Request Body
+      <span ng-if="item.headers['Content-Length']" class="badge badge-default pull-right">{{item.headers['Content-Length'] | toKilobytes}} kb</span>
+    </div>
+    <ul class="list-group"
+      ng-if="showReqBody">
+      <li class="list-group-item">
+        <pre>{{item.body | prettyJson}}</pre>
+      </li>
+    </ul>
+  </div>
+
+  <div ng-if="item.geo" class="panel"
+    ng-init="showReqGeo = false">
+    <div class="panel-heading toggle-content"
+      ng-click="showReqGeo = !showReqGeo">
+      <i ng-if="!showReqGeo" class="glyphicon glyphicon-chevron-right"></i>
+      <i ng-if="showReqGeo" class="glyphicon glyphicon-chevron-down"></i>
+      Found Geographic Data
+      <span class="badge badge-default pull-right">{{item.geo | arrLength}}</span>
+    </div>
+    <ul class="list-group"
+      ng-if="showReqGeo">
+      <li class="list-group-item">
+        <pre>{{item.geo | prettyJson}}</pre>
+      </li>
+    </ul>
+  </div>
+
 </div>

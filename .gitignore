@@ -9,3 +9,4 @@ geobin-go.test
 debug.out
 coverage/
 config.json
+npm-debug.log

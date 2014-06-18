@@ -1,16 +1,49 @@
-<div class="panel request-toggle"
-  ng-if="!isEmpty(history)"
-  ng-repeat="item in history | reverse">
-  <div class="panel-heading" ng-class="{fadein: isNewReq(item.timestamp)}">
-    <a class="detail-toggle" ui-sref="bin.request({timestamp: item.timestamp})">{{item.timestamp | prettyDate}}</a>
-    <span class="pull-right badge geo-toggle"
-      ng-if="isArray(item.geo)"
-      ng-init="geoActive = true"
-      ng-class="{'badge-success':geoActive}"
-      ng-click="toggleGeo(item); geoActive = !geoActive;">{{item.geo | arrLength}}</span>
-    <span class="pull-right badge"
-      ng-if="!isArray(item.geo)">{{item.geo | arrLength}}</span>
-  </div>
+<div class="request-list" ng-if="!isEmpty(history)">
+  <ul class="list-group">
+    <li class="list-group-item request-list-item clearfix"
+      ng-repeat="item in history | reverse"
+      ng-class="{fadein: isNewReq(item.timestamp)}">
+
+      <div class="btn-group">
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="time request was received">
+          <i class="glyphicon glyphicon-time"></i>
+          {{item.timestamp | prettyTime}}
+        </div>
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="date request was received">
+          <i class="glyphicon glyphicon-calendar"></i>
+          {{item.timestamp | prettyDate}}
+        </div>
+      </div>
+
+      <div class="pull-right"
+        ng-init="geoActive = true">
+        <div class="btn-group">
+          <button type="button" class="btn btn-info"
+            ng-if="isArray(item.geo)"
+            ng-disabled="!geoActive"
+            ng-click="zoomTo(item)">
+            <i class="glyphicon glyphicon-search"></i>
+          </button>
+          <button type="button" class="btn btn-info"
+            ng-disabled="!isArray(item.geo)"
+            ng-click="toggleGeo(item); geoActive = !geoActive;"
+            data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+            <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
+            <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+            {{item.geo | arrLength}}
+          </button>
+        </div>
+        <button type="button" class="btn btn-info"
+          data-toggle="tooltip" data-placement="bottom" title="details"
+          ui-sref="bin.request({timestamp: item.timestamp})">
+          Details
+          <i class="glyphicon glyphicon-chevron-right"></i>
+        </button>
+      </div>
+    </li>
+  </ul>
 </div>
 
 <div class="panel" ng-if="validBin && isEmpty(history)">
@@ -30,9 +63,12 @@
   </ul>
 </div>
 
-<div class="panel" ng-if="!validBin">
-  <div class="panel-heading">
-    <h4>No bin found with ID "{{binId}}"</h4>
-    <p>Would you like to <button type="button" class="btn btn-primary" ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button></p>
-  </div>
+<div class="alert alert-info" ng-if="!validBin">
+  <h4><i class="fa fa-warning"></i> Geobin "{{binId}}" Not Found!</h4>
+  <p>Either this bin has expired, or it never existed! Either way there's nothing to see here. You can either go back home or create a new geobin.</p>
+  <hr>
+  <p>
+    <button type="button" class="btn btn-primary" ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button>
+    <a href="/" class="btn btn-link"><i class="fa fa-home"></i> Go Back Home</a>
+  </p>
 </div>
