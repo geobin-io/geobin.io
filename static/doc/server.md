@@ -95,6 +95,7 @@ If you want to build for a different OS and Arch:
 
 As an example, to build for 32-bit windows:
 ```bash
+> cd build/
 > go run build.go -os windows -arch 386
 ```
 

@@ -5,12 +5,11 @@ This assumes you have set up the Go environment required to compile for your des
 
 To produce a default tar.gc targeted at linux/amd64:
 ```bash
-> make tar
+> go run build.go
 ```
 
 If you want to build for a different OS and Arch:
 ```bash
-> cd build/
 > go run build.go -os myOS -arch myArch
 ```
 
