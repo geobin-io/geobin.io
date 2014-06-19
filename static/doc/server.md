@@ -71,11 +71,35 @@ Geobin comes with a default `config.json` file which should get you up and runni
 > go test
 ```
 
-## Build
+## Local Build
 
 ```bash
 > go build -o geobin
 ```
+
+## Cross-compiled Build
+
+This assumes you have set up the Go environment required to compile for your destination.
+* For cross compilation setup, see [this blog from Dave Cheney](http://dave.cheney.net/2013/07/09/an-introduction-to-cross-compilation-with-go-1-1)
+
+To produce a default tar.gz targeted at linux/amd64:
+```bash
+> make tar
+```
+
+If you want to build for a different OS and Arch:
+```bash
+> cd build/
+> go run build.go -os myOS -arch myArch
+```
+
+As an example, to build for 32-bit windows:
+```bash
+> cd build/
+> go run build.go -os windows -arch 386
+```
+
+The available OS and Arch combinations are listed at the blog linked above.
 
 [go]: http://golang.org
 [dev environment]: http://golang.org/doc/install
