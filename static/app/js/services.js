@@ -4,7 +4,7 @@
   angular.module('Geobin.services', [])
 
   // App Version
-  .value('appVersion', '1.0.0')
+  .value('appVersion', '1.0.1')
 
   // API Version
   .value('apiVersion', '1')
