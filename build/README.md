@@ -3,7 +3,7 @@
 This assumes you have set up the Go environment required to compile for your destination.
 * For cross compilation setup, see [this blog from Dave Cheney](http://dave.cheney.net/2013/07/09/an-introduction-to-cross-compilation-with-go-1-1)
 
-To produce a default tar.gc targeted at linux/amd64:
+To produce a default tar.gz targeted at linux/amd64:
 ```bash
 > go run build.go
 ```
