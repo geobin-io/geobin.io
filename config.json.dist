@@ -1,5 +1,5 @@
 {
-  "Host": "localhost",
+  "Host": "0.0.0.0",
   "Port": 8080,
   "RedisHost": "127.0.0.1:6379",
   "RedisPass": "",

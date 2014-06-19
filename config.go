@@ -7,7 +7,7 @@ import (
 )
 
 // Path to the config file
-var configFile = "config.json"
+var configFile = "./config.json"
 
 // Config holds configuration values read in from the config file
 type Config struct {
