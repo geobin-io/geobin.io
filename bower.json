@@ -14,7 +14,8 @@
     "leaflet-dist": "~0.7.2",
     "angular-ui-router": "~0.2.10",
     "angular-md": "~1.0.0",
-    "marked": "~0.3.2"
+    "marked": "~0.3.2",
+    "angulartics": "~0.15.19"
   },
   "resolutions": {
     "marked": "~0.3.2",

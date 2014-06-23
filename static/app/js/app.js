@@ -7,7 +7,9 @@
     'Geobin.directives',
     'Geobin.controllers',
     'chieffancypants.loadingBar',
-    'yaru22.md'
+    'yaru22.md',
+    'angulartics',
+    'angulartics.google.analytics'
   ])
 
   .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
@@ -61,13 +63,5 @@
           });
     }
   ]);
-
-  // temporary tooltip workaround
-  // @TODO: replace jquery/bootstrap elements w/ angularUI
-  // http://angular-ui.github.io/bootstrap/
-  // $('body').tooltip({
-  //     container: 'body',
-  //     selector: '[data-toggle=tooltip]'
-  // });
 
 })();

@@ -68,7 +68,10 @@
   <p>Either this bin has expired, or it never existed! Either way there's nothing to see here. You can either go back home or create a new geobin.</p>
   <hr>
   <p>
-    <button type="button" class="btn btn-primary" ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button>
+    <button type="button" class="btn btn-primary"
+      analytics-on="click"
+      analytics-event="Create Geobin (expired)"
+      ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button>
     <a href="/" class="btn btn-link"><i class="fa fa-home"></i> Go Back Home</a>
   </p>
 </div>
