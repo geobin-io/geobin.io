@@ -75,7 +75,7 @@
       }
     });
 
-    api.ws(binId, function(event) {
+    api.ws.open(binId, function(event) {
       $scope.isNew = true;
       try {
         var data = JSON.parse(event.data);
@@ -89,15 +89,12 @@
     });
 
     $scope.$on('$destroy', function binCtrlDestroy () {
-      api.close(binId);
+      api.ws.close(binId);
     });
   }])
 
-  .controller('BinListCtrl', ['$scope',
-    function ($scope) {
-      // console.log('list', $scope);
-    }
-  ])
+  .controller('BinListCtrl', ['$scope', function ($scope) {}])
+
   .controller('BinRequestCtrl', ['$scope', '$stateParams',
     function ($scope, $stateParams) {
       $scope.item = updateItem();
