@@ -29,13 +29,13 @@ describe('directives', function() {
   beforeEach(module('Geobin.services'));
   beforeEach(module('Geobin.directives'));
 
-  describe('app-version', function() {
+  describe('client-version', function() {
     it('should print current version', function() {
       module(function($provide) {
-        $provide.value('appVersion', 'TEST_VER');
+        $provide.value('clientVersion', 'TEST_VER');
       });
       inject(function($compile, $rootScope) {
-        var element = $compile('<span app-version></span>')($rootScope);
+        var element = $compile('<span client-version></span>')($rootScope);
         expect(element.text()).toEqual('TEST_VER');
       });
     });

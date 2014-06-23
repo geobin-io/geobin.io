@@ -4,7 +4,7 @@
   angular.module('Geobin.directives', [])
 
   // App Version
-  .directive('appVersion', ['appVersion', function (version) {
+  .directive('clientVersion', ['clientVersion', function (version) {
     return function (scope, elm, attrs) {
       elm.text(version);
     };
