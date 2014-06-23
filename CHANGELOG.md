@@ -8,6 +8,7 @@
     * change `api.close` to `api.ws.close`
     * expose `sockets` as `api.ws.sockets`
   * change `appVersion` to `clientVersion`
+* Added build script. See the Cross-compiled Build section in the [server docs](static/doc/server.md)
 
 # 1.0.1
 * change example location
