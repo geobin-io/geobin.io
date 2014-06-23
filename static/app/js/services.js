@@ -1,18 +1,26 @@
 (function(){
 
-  // Services
   angular.module('Geobin.services', [])
 
-  // App Version
-  .value('appVersion', '1.0.1')
+  /**
+   * clientVersion
+   * -------------
+   * client version constant
+   */
+  .value('clientVersion', '1.0.2')
 
-  // API Version
+  /**
+   * apiVersion
+   * ----------
+   * API version constant
+   */
   .value('apiVersion', '1')
 
-  // Basemaps
-  // --------
-  // Houses all available basemaps, specifies default
-
+  /**
+   * basemaps
+   * --------
+   * houses all available basemaps, specifies default
+   */
   .service('basemaps', function () {
     this.init = function () {
       var streets = L.esri.basemapLayer('Streets');
@@ -53,10 +61,11 @@
     this.init();
   })
 
-  // Store
-  // -----
-  // localStorage interface for browser-based user persistence
-
+  /**
+   * store
+   * -----
+   * localStorage interface for browser-based user persistence
+   */
   .service('store', function () {
 
     var local = new TinyStore('geobin');
@@ -79,21 +88,34 @@
 
   })
 
-  // API
-  // ---
-  // helpers for interacting with the Geobin API
+  /**
+   * api
+   * ---
+   * service for interacting with the Geobin API
+   */
 
   .service('api', ['$http', '$location', 'store', 'apiVersion', function ($http, $location, store, apiVersion) {
 
-    // Create
-    // ------
-    // POST to /api/{apiVersion}/create
-    // expects to get back an object with:
-    // * id (string)
-    // * expires (unix timestamp)
+    // create reference to self for use in child methods
+    var api = this;
 
+    /**
+     * endpoint
+     * --------
+     * expose base API endpoint
+     * @type {String}
+     */
+    this.endpoint = '/api/' + apiVersion + '/';
+
+    /**
+     * create
+     * ------
+     * create a new geobin
+     */
     this.create = function () {
-      $http.post('/api/' + apiVersion + '/create', {})
+      var route = api.endpoint + 'create';
+
+      $http.post(route, {})
         .success(function createSuccess (data, status, headers, config) {
           store.local.session.history.push(data);
           store.local.save();
@@ -101,17 +123,18 @@
         });
     };
 
-    // History
-    // -------
-    // POST to /api/{apiVersion}/history/{binId}
-    // expects to get back an object with:
-    // * timestamp
-    // * headers
-    // * body
-    // * geo
-
+    /**
+     * history
+     * -------
+     * POST to /api/{apiVersion}/history/{binId}
+     * get bin history object by ID
+     * @param  {String}   binId     ID of bin
+     * @param  {Function} callback  function to call on successful POST
+     */
     this.history = function (binId, callback) {
-      $http.post('/api/' + apiVersion + '/history/' + binId, {})
+      var route = api.endpoint + 'history/' + binId;
+
+      $http.post(route, {})
         .success(function historySuccess (data, status, headers, config) {
           if (status === 200) {
             callback(data);
@@ -124,15 +147,17 @@
         });
     };
 
-    // Counts
-    // -------
-    // POST to /api/{apiVersion}/counts
-    // * expects to receive a JSON encoded array of bin IDs
-    // * expects to get back an object with binId keys and count values
-    //   where count is the number of requests made to that bin
-
+    /**
+     * counts
+     * ------
+     * get number of requests made to bins by array of bin IDs
+     * @param  {Array}    binIds    Array of bin IDs
+     * @param  {Function} callback  function to call on successful POST
+     */
     this.counts = function (binIds, callback) {
-      $http.post('/api/' + apiVersion + '/counts', binIds)
+      var route = api.endpoint + 'counts';
+
+      $http.post(route, binIds)
         .success(function countsSuccess (data, status, headers, config) {
           if (status === 200) {
             callback(data);
@@ -140,18 +165,42 @@
         });
     };
 
-    // Sockets
-    // -------
-    // Methods pertaining to opening and closing WebSocket connections for a bin
+    /**
+     * Sockets
+     * -------
+     * Methods pertaining to opening and closing WebSocket connections for a bin
+     */
 
-    var sockets = {};
+    this.ws = {};
 
-    this.ws = function (binId, callback) {
-      sockets[binId] = new WebSocket('ws://' + window.location.host + '/api/1/ws/' + binId);
+    /**
+     * sockets
+     * -------
+     * Collection of WebSockets by bin ID
+     */
+    var sockets = this.ws.sockets = {};
+
+    /**
+     * ws.open
+     * -------
+     * Creates a new WebSocket connection and binds a callback to `onmessage`
+     * @param  {String}   binId     ID of bin to connect to
+     * @param  {Function} callback  function to bind to `onmessage`
+     */
+    this.ws.open = function (binId, callback) {
+      var route = 'ws://' + window.location.host + api.endpoint + 'ws/' + binId;
+
+      sockets[binId] = new WebSocket(route);
       sockets[binId].onmessage = callback;
     };
 
-    this.close = function (binId) {
+    /**
+     * ws.close
+     * --------
+     * Closes a WebSocket connection
+     * @param  {String} binId   ID of bin to close
+     */
+    this.ws.close = function (binId) {
       if (sockets[binId] && sockets[binId].close) {
         sockets[binId].close();
       }

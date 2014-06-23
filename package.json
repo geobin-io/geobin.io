@@ -1,7 +1,7 @@
 {
   "name": "geobin.io",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Inspect HTTP requests with geographic data",
   "repository": "https://github.com/esripdx/geobin.io",
   "license": "Apache 2.0",
