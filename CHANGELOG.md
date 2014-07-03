@@ -9,6 +9,7 @@
     * expose `sockets` as `api.ws.sockets`
   * change `appVersion` to `clientVersion`
 * Added build script. See the Cross-compiled Build section in the [server docs](static/doc/server.md)
+* add analytics
 
 # 1.0.1
 * change example location
