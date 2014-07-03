@@ -12,9 +12,14 @@
     'angulartics.google.analytics'
   ])
 
-  .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
-    function ($locationProvider, $stateProvider, $urlRouterProvider) {
+  .config(['$locationProvider', '$stateProvider', '$urlRouterProvider', '$analyticsProvider',
+    function ($locationProvider, $stateProvider, $urlRouterProvider, $analyticsProvider) {
       $locationProvider.html5Mode(true);
+
+      // analytics
+      // prevent double reporting of initial pageview
+      // drawback is redirects are not tracked (e.g. /api/asdf -> /doc/api)
+      $analyticsProvider.firstPageview(false);
 
       // Redirects
       $urlRouterProvider.when(/^\/api(.*)?/, '/doc/api');
