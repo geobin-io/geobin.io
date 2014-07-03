@@ -7,12 +7,19 @@
     'Geobin.directives',
     'Geobin.controllers',
     'chieffancypants.loadingBar',
-    'yaru22.md'
+    'yaru22.md',
+    'angulartics',
+    'angulartics.google.analytics'
   ])
 
-  .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
-    function ($locationProvider, $stateProvider, $urlRouterProvider) {
+  .config(['$locationProvider', '$stateProvider', '$urlRouterProvider', '$analyticsProvider',
+    function ($locationProvider, $stateProvider, $urlRouterProvider, $analyticsProvider) {
       $locationProvider.html5Mode(true);
+
+      // analytics
+      // prevent double reporting of initial pageview
+      // drawback is redirects are not tracked (e.g. /api/asdf -> /doc/api)
+      $analyticsProvider.firstPageview(false);
 
       // Redirects
       $urlRouterProvider.when(/^\/api(.*)?/, '/doc/api');
@@ -61,13 +68,5 @@
           });
     }
   ]);
-
-  // temporary tooltip workaround
-  // @TODO: replace jquery/bootstrap elements w/ angularUI
-  // http://angular-ui.github.io/bootstrap/
-  // $('body').tooltip({
-  //     container: 'body',
-  //     selector: '[data-toggle=tooltip]'
-  // });
 
 })();
