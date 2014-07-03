@@ -1,5 +1,7 @@
 # Geobin Client
 
+[![Development Dependencies](https://david-dm.org/esripdx/geobin.io/dev-status.svg)](https://david-dm.org/esripdx/geobin.io#info=devDependencies)
+
 Browser client for Geobin.
 
 ### Install Dependencies
@@ -21,6 +23,8 @@ Behind the scenes this will also call `./node_modules/bower/bin/bower install`. 
 * `/static/app/components` - contains the angular framework files
 
 ### Run the Application
+
+Make sure you've also installed all server dependencies (`go get`) before starting the application.
 
 ```bash
 make run
