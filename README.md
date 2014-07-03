@@ -12,9 +12,10 @@ Hat tip to [RequestBin] for inspiration.
 
 ## Contents
 
-* [Documentation](#documentation)
-* [Running Geobin locally](#running-geobin-locally)
-* [How do we find geographic data?](#how-do-we-find-geographic-data)
+* [Documentation]
+* [Running Geobin locally]
+* [How do we find geographic data?]
+* [License]
 
 ## Documentation
 
@@ -134,6 +135,27 @@ We look for [valid](http://geojsonlint.com) [GeoJSON]. If no GeoJSON is detected
   * `coords`
   * `coordinates`
 
+## License
+
+Copyright 2014 Esri, Inc
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+> http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of the license is available in the repository's [LICENSE.txt] file.
+
+[Documentation]: #documentation
+[Running Geobin locally]: #running-geobin-locally
+[How do we find geographic data?]: #how-do-we-find-geographic-data
 [GeoJSON]: http://geojson.org/geojson-spec.html
 [WebSockets]: http://caniuse.com/websockets
 [RequestBin]: http://requestb.in
@@ -143,3 +165,5 @@ We look for [valid](http://geojsonlint.com) [GeoJSON]. If no GeoJSON is detected
 [API]: static/doc/api.md
 [redis]: http://redis.io
 [node]: http://nodejs.org
+[License]: #license
+[LICENSE.txt]: LICENSE.txt
