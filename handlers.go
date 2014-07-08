@@ -27,7 +27,7 @@ func (gb *geobinServer) createHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("create -", r.URL)
 
 	// Get a new name
-	n, err := gb.randomString(config.NameLength)
+	n, err := gb.randomString(gb.conf.NameLength)
 	if err != nil {
 		log.Println("Failure to create new name:", n, err)
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)

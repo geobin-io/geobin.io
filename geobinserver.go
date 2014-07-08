@@ -37,13 +37,15 @@ type RedisClient interface {
 
 type geobinServer struct {
 	*http.ServeMux
+	conf *Config
 	RedisClient
 	PubSubber
 	SocketMap
 }
 
-func NewGeobinServer(rc RedisClient, ps PubSubber, sm SocketMap) *geobinServer {
+func NewGeobinServer(c *Config, rc RedisClient, ps PubSubber, sm SocketMap) *geobinServer {
 	gbs := geobinServer{
+		conf:        c,
 		RedisClient: rc,
 		PubSubber:   ps,
 		SocketMap:   sm,
@@ -98,7 +100,7 @@ func (gb *geobinServer) createRouter() *http.ServeMux {
 func (gb *geobinServer) randomString(length int) (string, error) {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = config.NameVals[rand.Intn(len(config.NameVals))]
+		b[i] = gb.conf.NameVals[rand.Intn(len(gb.conf.NameVals))]
 	}
 
 	s := string(b)

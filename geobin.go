@@ -13,7 +13,6 @@ import (
 )
 
 // some read-only global vars
-var config = &Config{}
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 var isVerbose = flag.Bool("verbose", false, "Boolean flag indicates you want to see a lot of log messages.")
 
@@ -28,14 +27,14 @@ func main() {
 	// TODO: verify if this is actually beneficial
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// store global read-only config
-	loadConfig()
+	// load up config.json
+	conf := loadConfig()
 
 	// redis client
 	client := redis.NewTCPClient(&redis.Options{
-		Addr:     config.RedisHost,
-		Password: config.RedisPass,
-		DB:       config.RedisDB,
+		Addr:     conf.RedisHost,
+		Password: conf.RedisPass,
+		DB:       conf.RedisDB,
 	})
 
 	if ping := client.Ping(); ping.Err() != nil {
@@ -57,11 +56,11 @@ func main() {
 	}()
 
 	// prepare server
-	http.Handle("/", NewGeobinServer(client, ps, sm))
+	http.Handle("/", NewGeobinServer(conf, client, ps, sm))
 
 	// Start up HTTP server
-	log.Println("Starting server at", config.Host, config.Port)
-	err := http.ListenAndServe(fmt.Sprintf("%v:%d", config.Host, config.Port), nil)
+	log.Println("Starting server at", conf.Host, conf.Port)
+	err := http.ListenAndServe(fmt.Sprintf("%v:%d", conf.Host, conf.Port), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

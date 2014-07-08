@@ -9,9 +9,55 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bmizerany/assert"
+	"github.com/go-redis/redis"
 )
+
+type MockRedis struct{}
+
+type MockPubSub struct{}
+
+func (mr *MockRedis) ZAdd(key string, members ...redis.Z) *redis.IntCmd {
+
+}
+
+func (mr *MockRedis) ZCount(key, min, max string) *redis.IntCmd {
+
+}
+
+func (mr *MockRedis) Expire(key string, dur time.Duration) *redis.BoolCmd {
+
+}
+
+func (mr *MockRedis) Publish(channel, message string) *redis.IntCmd {
+
+}
+
+func (mr *MockRedis) ZRevRange(key, start, stop string) *redis.StringSliceCmd {
+
+}
+
+func (mr *MockRedis) Exists(key string) *redis.BoolCmd {
+
+}
+
+func (mr *MockRedis) Get(key string) *redis.StringCmd {
+
+}
+
+func (mr *MockRedis) Multi() *redis.Multi {
+
+}
+
+func (mps *MockPubSub) Subscribe(channels ...string) error {
+
+}
+
+func (mps *MockPubSub) Unsubscribe(channels ...string) error {
+
+}
 
 func TestCreateHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "http://testing.geobin.io/create", nil)

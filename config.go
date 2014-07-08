@@ -21,14 +21,18 @@ type Config struct {
 }
 
 // loadConfig reads configuration values from the config file
-func loadConfig() {
+func loadConfig() *Config {
 	file, err := os.Open(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
+
+	var conf Config
+	err = decoder.Decode(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	return &conf
 }
