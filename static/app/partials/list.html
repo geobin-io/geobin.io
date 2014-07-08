@@ -17,21 +17,20 @@
         </div>
       </div>
 
-      <div class="pull-right"
-        ng-init="geoActive = true">
+      <div class="pull-right">
         <div class="btn-group">
           <button type="button" class="btn btn-info"
             ng-if="isArray(item.geo)"
-            ng-disabled="!geoActive"
+            ng-disabled="!visibleLayers[item.timestamp]"
             ng-click="zoomTo(item)">
             <i class="glyphicon glyphicon-search"></i>
           </button>
           <button type="button" class="btn btn-info"
             ng-disabled="!isArray(item.geo)"
-            ng-click="toggleGeo(item); geoActive = !geoActive;"
+            ng-click="toggleGeo(item)"
             data-toggle="tooltip" data-placement="bottom" title="toggle geo">
-            <i ng-if="geoActive" class="glyphicon glyphicon-eye-open"></i>
-            <i ng-if="!geoActive" class="glyphicon glyphicon-eye-close"></i>
+            <i ng-if="visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-open"></i>
+            <i ng-if="!visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-close"></i>
             {{item.geo | arrLength}}
           </button>
         </div>
