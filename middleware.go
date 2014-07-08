@@ -12,20 +12,20 @@ import (
 // only be used on routes that contain binIds or other unique identifiers,
 // otherwise the rate limit will be globally applied, instead of scoped to a
 // particular bin.
-func rateLimit(h http.HandlerFunc, requestsPerSec int) http.HandlerFunc {
+func (gb *geobinServer) rateLimit(h http.HandlerFunc, requestsPerSec int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.Path
 		ts := time.Now().Unix()
 		key := fmt.Sprintf("rate-limit:%s:%d", url, ts)
 
-		exists, err := nameExists(key)
+		exists, err := gb.nameExists(key)
 		if err != nil {
 			log.Println(err)
 		}
-		if exists {
-			res, err := client.Get(key).Result()
-			if err != nil {
 
+		if exists {
+			res, err := gb.RedisClient.Get(key).Result()
+			if err != nil {
 				http.Error(w, "API Error", http.StatusServiceUnavailable)
 				return
 			}
@@ -37,7 +37,7 @@ func rateLimit(h http.HandlerFunc, requestsPerSec int) http.HandlerFunc {
 			}
 		}
 
-		tx := client.Multi()
+		tx := gb.Multi()
 		tx.Incr(key)
 		tx.Expire(key, 5*time.Second)
 		tx.Close()

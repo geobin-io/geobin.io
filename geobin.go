@@ -6,47 +6,58 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"runtime"
-	"time"
 
-	redis "github.com/vmihailenco/redis/v2"
+	"github.com/go-redis/redis"
 )
 
+// some read-only global vars
 var config = &Config{}
-var client = &redis.Client{}
-var pubsub = &redis.PubSub{}
-var socketMap SocketMap
 var isDebug = flag.Bool("debug", false, "Boolean flag indicates a debug build. Affects log statements.")
 var isVerbose = flag.Bool("verbose", false, "Boolean flag indicates you want to see a lot of log messages.")
 
 func init() {
-	flag.Parse()
-	// set numprocs
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	// add file info to log statements
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
-	// set up unique seed for random num generation
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	loadConfig()
-	setupRedis()
 }
 
 // starts the redis pump and http server
 func main() {
-	// prepare router
-	r := createRouter()
-	http.Handle("/", r)
+	flag.Parse()
+	// TODO: verify if this is actually beneficial
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	// store global read-only config
+	loadConfig()
+
+	// redis client
+	client := redis.NewTCPClient(&redis.Options{
+		Addr:     config.RedisHost,
+		Password: config.RedisPass,
+		DB:       config.RedisDB,
+	})
+
+	if ping := client.Ping(); ping.Err() != nil {
+		log.Fatal(ping.Err())
+	}
+
+	// redis pubsub connection
+	ps := client.PubSub()
+
+	// prepare a socketmap
+	sm := NewSocketMap(ps)
 
 	// loop for receiving messages from Redis pubsub, and forwarding them on to relevant ws connection
-	go redisPump()
+	go redisPump(ps, sm)
 
 	defer func() {
-		pubsub.Close()
+		ps.Close()
 		client.Close()
 	}()
+
+	// prepare server
+	http.Handle("/", NewGeobinServer(client, ps, sm))
 
 	// Start up HTTP server
 	log.Println("Starting server at", config.Host, config.Port)
@@ -56,27 +67,11 @@ func main() {
 	}
 }
 
-// setupRedis creates a redis client and pubsub
-func setupRedis() {
-	client = redis.NewTCPClient(&redis.Options{
-		Addr:     config.RedisHost,
-		Password: config.RedisPass,
-		DB:       config.RedisDB,
-	})
-
-	if ping := client.Ping(); ping.Err() != nil {
-		log.Fatal(ping.Err())
-	}
-	pubsub = client.PubSub()
-
-	socketMap = NewSocketMap(pubsub)
-}
-
 // redisPump reads messages out of redis and pushes them through the
 // appropriate websocket
-func redisPump() {
+func redisPump(ps *redis.PubSub, sm SocketMap) {
 	for {
-		v, err := pubsub.Receive()
+		v, err := ps.Receive()
 		if err != nil {
 			log.Println("Error from Redis PubSub:", err)
 			return
@@ -84,9 +79,23 @@ func redisPump() {
 
 		switch v := v.(type) {
 		case *redis.Message:
-			if err = socketMap.Send(v.Channel, []byte(v.Payload)); err != nil {
+			if err = sm.Send(v.Channel, []byte(v.Payload)); err != nil {
 				log.Println(err)
 			}
 		}
+	}
+}
+
+// debugLog logs messages sent to it if and only if isDebug or isVerbose are set to true
+func debugLog(v ...interface{}) {
+	if *isDebug || *isVerbose {
+		log.Println(v...)
+	}
+}
+
+// verboseLog logs messages sent to it if and only if isVerbose is set to true
+func verboseLog(v ...interface{}) {
+	if *isVerbose {
+		log.Println(v...)
 	}
 }
