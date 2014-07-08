@@ -7,7 +7,7 @@
    * -------------
    * client version constant
    */
-  .value('clientVersion', '1.0.2')
+  .value('clientVersion', '1.0.3')
 
   /**
    * apiVersion
