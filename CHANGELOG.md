@@ -1,5 +1,10 @@
 # Geobin Changelog
 
+# 1.0.3
+* fix visibility toggle bug
+* zoom in on first new request
+* zoom to extent of all requests when loading a bin
+
 # 1.0.2
 * refactor services
   * add `api.endpoint`
