@@ -1,38 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
-
-	"github.com/go-redis/redis"
 )
-
-// requests per second
-const limit = 1
 
 func init() {
 	// set up unique seed for random num generation
 	rand.Seed(time.Now().UTC().UnixNano())
-}
-
-// mock our use of redis pubsub for modularity/testing purposes
-type PubSubber interface {
-	Subscribe(channels ...string) error
-	Unsubscribe(channels ...string) error
-}
-
-// mock our use of redis client for modularity/testing purposes
-type RedisClient interface {
-	ZAdd(key string, members ...redis.Z) *redis.IntCmd
-	ZCount(key, min, max string) *redis.IntCmd
-	Expire(key string, dur time.Duration) *redis.BoolCmd
-	Publish(channel, message string) *redis.IntCmd
-	ZRevRange(key, start, stop string) *redis.StringSliceCmd
-	Exists(key string) *redis.BoolCmd
-	Get(key string) *redis.StringCmd
-	Multi() *redis.Multi
 }
 
 type geobinServer struct {
@@ -66,7 +45,7 @@ func (gb *geobinServer) createRouter() *http.ServeMux {
 			debugLog("web -", req.URL)
 			http.ServeFile(w, req, "static/app/index.html")
 		case "POST":
-			gb.rateLimit(gb.binHandler, limit)(w, req)
+			gb.rateLimit(gb.binHandler, gb.conf.RateLimit)(w, req)
 		}
 	})
 	r.HandleFunc("/static/", func(w http.ResponseWriter, req *http.Request) {
@@ -89,11 +68,47 @@ func (gb *geobinServer) createRouter() *http.ServeMux {
 	}
 
 	r.HandleFunc("/api/1/counts", apiRoute(gb.countsHandler))
-	r.HandleFunc("/api/1/create", apiRoute(gb.rateLimit(gb.createHandler, limit)))
-	r.HandleFunc("/api/1/history/", apiRoute(gb.rateLimit(gb.historyHandler, limit))) // /api/1/history/{bin_id}
-	r.HandleFunc("/api/1/ws/", gb.wsHandler)                                          // /api/1/ws/{bin_id}
+	r.HandleFunc("/api/1/create", apiRoute(gb.rateLimit(gb.createHandler, gb.conf.RateLimit)))
+	r.HandleFunc("/api/1/history/", apiRoute(gb.rateLimit(gb.historyHandler, gb.conf.RateLimit))) // /api/1/history/{bin_id}
+	r.HandleFunc("/api/1/ws/", gb.wsHandler)                                                      // /api/1/ws/{bin_id}
 
 	return r
+}
+
+// rateLimit uses redis to enforce rate limits per route. This middleware should
+// only be used on routes that contain binIds or other unique identifiers,
+// otherwise the rate limit will be globally applied, instead of scoped to a
+// particular bin.
+func (gb *geobinServer) rateLimit(h http.HandlerFunc, requestsPerSec int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.Path
+		ts := time.Now().Unix()
+		key := fmt.Sprintf("rate-limit:%s:%d", url, ts)
+
+		exists, err := gb.Exists(key)
+		if err != nil {
+			log.Println(err)
+		}
+
+		if exists {
+			res, err := gb.RedisClient.Get(key)
+			if err != nil {
+				http.Error(w, "API Error", http.StatusServiceUnavailable)
+				return
+			}
+
+			reqCount, _ := strconv.Atoi(res)
+			if reqCount >= requestsPerSec {
+				http.Error(w, "Rate limit exceeded. Wait a moment and try again.", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		gb.Incr(key)
+		gb.Expire(key, 5*time.Second)
+
+		h.ServeHTTP(w, r)
+	}
 }
 
 // randomString returns a random string with the given length
@@ -105,7 +120,7 @@ func (gb *geobinServer) randomString(length int) (string, error) {
 
 	s := string(b)
 
-	exists, err := gb.nameExists(s)
+	exists, err := gb.Exists(s)
 	if err != nil {
 		log.Println("Failure to EXISTS for:", s, err)
 		return "", err
@@ -116,14 +131,4 @@ func (gb *geobinServer) randomString(length int) (string, error) {
 	}
 
 	return s, nil
-}
-
-// nameExists returns true if the specified bin name exists
-func (gb *geobinServer) nameExists(name string) (bool, error) {
-	resp := gb.Exists(name)
-	if resp.Err() != nil {
-		return false, resp.Err()
-	}
-
-	return resp.Val(), nil
 }

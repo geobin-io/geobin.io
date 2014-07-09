@@ -56,7 +56,7 @@ func main() {
 	}()
 
 	// prepare server
-	http.Handle("/", NewGeobinServer(conf, client, ps, sm))
+	http.Handle("/", NewGeobinServer(conf, NewRedisWrapper(client), ps, sm))
 
 	// Start up HTTP server
 	log.Println("Starting server at", conf.Host, conf.Port)

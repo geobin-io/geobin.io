@@ -35,16 +35,16 @@ func (gb *geobinServer) createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save to redis
-	if res := gb.ZAdd(n, redis.Z{Score: 0, Member: ""}); res.Err() != nil {
-		log.Println("Failure to ZADD to", n, res.Err())
+	if _, err = gb.ZAdd(n, redis.Z{Score: 0, Member: ""}); err != nil {
+		log.Println("Failure to ZADD to", n, err)
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
 
 	// Set expiration
 	d := 48 * time.Hour
-	if res := gb.Expire(n, d); res.Err() != nil {
-		log.Println("Failure to set EXPIRE for", n, res.Err())
+	if _, err = gb.Expire(n, d); err != nil {
+		log.Println("Failure to set EXPIRE for", n, err)
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return
 	}
@@ -84,7 +84,7 @@ func (gb *geobinServer) countsHandler(w http.ResponseWriter, r *http.Request) {
 	// look up each binId in db
 	counts := make(map[string]interface{})
 	for _, binId := range binIds {
-		if c, err := gb.ZCount(binId, "-inf", "+inf").Result(); err == nil && c > 0 {
+		if c, err := gb.ZCount(binId, "-inf", "+inf"); err == nil && c > 0 {
 			counts[binId] = c - 1
 		} else {
 			counts[binId] = nil
@@ -105,7 +105,7 @@ func (gb *geobinServer) binHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("bin -", r.URL)
 	name := r.URL.Path[1:]
 
-	exists, err := gb.nameExists(name)
+	exists, err := gb.Exists(name)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
@@ -140,12 +140,12 @@ func (gb *geobinServer) binHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error marshalling request:", err)
 	}
 
-	if res := gb.ZAdd(name, redis.Z{Score: float64(time.Now().UTC().Unix()), Member: string(encoded)}); res.Err() != nil {
-		log.Println("Failure to ZADD to", name, res.Err())
+	if _, err = gb.ZAdd(name, redis.Z{Score: float64(time.Now().UTC().Unix()), Member: string(encoded)}); err != nil {
+		log.Println("Failure to ZADD to", name, err)
 	}
 
-	if res := gb.Publish(name, string(encoded)); res.Err() != nil {
-		log.Println("Failure to PUBLISH to", name, res.Err())
+	if _, err = gb.Publish(name, string(encoded)); err != nil {
+		log.Println("Failure to PUBLISH to", name, err)
 	}
 }
 
@@ -157,7 +157,7 @@ func (gb *geobinServer) historyHandler(w http.ResponseWriter, r *http.Request) {
 	path := strings.Split(r.URL.Path, "/")
 	name := path[len(path)-1]
 
-	exists, err := gb.nameExists(name)
+	exists, err := gb.Exists(name)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
@@ -168,13 +168,13 @@ func (gb *geobinServer) historyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set := gb.ZRevRange(name, "0", "-1")
-	if set.Err() != nil {
-		log.Println("Failure to ZREVRANGE for", name, set.Err())
+	set, err := gb.ZRevRange(name, "0", "-1")
+	if err != nil {
+		log.Println("Failure to ZREVRANGE for", name, err)
 	}
 
 	// chop off the last history member since it is the placeholder value from when the set was created
-	vals := set.Val()[:len(set.Val())-1]
+	vals := set[:len(set)-1]
 
 	history := make([]GeobinRequest, 0, len(vals))
 	for _, v := range vals {

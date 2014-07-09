@@ -6,8 +6,12 @@ import (
 	"os"
 )
 
-// Path to the config file
-var configFile = "./config.json"
+const (
+	// Path to the config file
+	configFile = "./config.json"
+	// Requests per second
+	rateLimit = 1
+)
 
 // Config holds configuration values read in from the config file
 type Config struct {
@@ -18,6 +22,7 @@ type Config struct {
 	RedisDB    int64
 	NameVals   string
 	NameLength int
+	RateLimit  int
 }
 
 // loadConfig reads configuration values from the config file
@@ -34,5 +39,6 @@ func loadConfig() *Config {
 		log.Fatal(err)
 	}
 
+	conf.RateLimit = rateLimit
 	return &conf
 }
