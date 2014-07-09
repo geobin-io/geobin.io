@@ -3,9 +3,9 @@ language: go
 # @TODO mock redis and config.json to make go tests work
 
 install:
-#  - go get -t
+  - go get -t
   - npm install
 
 script:
-# - go test -v ./...
+  - go test -v ./...
   - npm test
