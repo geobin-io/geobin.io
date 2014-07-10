@@ -114,6 +114,8 @@ func (mr *MockRedis) Get(key string) (string, error) {
 }
 
 func (mr *MockRedis) Incr(key string) (int64, error) {
+	mr.Lock()
+	defer mr.Unlock()
 	if _, ok := mr.incrs[key]; !ok {
 		mr.incrs[key] = "1"
 		return 1, nil
