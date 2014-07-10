@@ -3,7 +3,7 @@ setup:
 tests:
 	go test -v ./... && npm test
 run:
-	go run geobin.go config.go handlers.go geobinrequest.go util.go socket.go socketmap.go middleware.go
+	go run geobin.go config.go geobinserver.go handlers.go rediswrapper.go geobinrequest.go socket.go socketmap.go
 debug:
 	go build -o debug.out && ./debug.out -debug=true
 tar:
