@@ -4,6 +4,7 @@
 * fix visibility toggle bug
 * zoom in on first new request
 * zoom to extent of all requests when loading a bin
+* catch invalid request URLs
 
 # 1.0.2
 * refactor services
@@ -13,7 +14,7 @@
     * change `api.close` to `api.ws.close`
     * expose `sockets` as `api.ws.sockets`
   * change `appVersion` to `clientVersion`
-* Added build script. See the Cross-compiled Build section in the [server docs](static/doc/server.md)
+* add build script - see Cross-compiled Build section in [server docs](static/doc/server.md)
 * add analytics
 
 # 1.0.1

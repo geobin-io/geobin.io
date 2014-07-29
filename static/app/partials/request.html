@@ -1,98 +1,111 @@
-<ul class="list-group request-list">
-  <li class="list-group-item clearfix">
+<section class="request" ng-if="item">
+  <ul class="list-group request-list">
+    <li class="list-group-item clearfix">
 
-    <div class="btn-group btn-group">
-      <div class="btn"
-        data-toggle="tooltip" data-placement="bottom" title="time request was received">
-        <i class="glyphicon glyphicon-time"></i>
-        {{item.timestamp | prettyTime}}
+      <div class="btn-group btn-group">
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="time request was received">
+          <i class="glyphicon glyphicon-time"></i>
+          {{item.timestamp | prettyTime}}
+        </div>
+        <div class="btn"
+          data-toggle="tooltip" data-placement="bottom" title="date request was received">
+          <i class="glyphicon glyphicon-calendar"></i>
+          {{item.timestamp | prettyDate}}
+        </div>
       </div>
-      <div class="btn"
-        data-toggle="tooltip" data-placement="bottom" title="date request was received">
-        <i class="glyphicon glyphicon-calendar"></i>
-        {{item.timestamp | prettyDate}}
-      </div>
-    </div>
 
-    <div class="pull-right">
-      <div class="btn-group">
+      <div class="pull-right">
+        <div class="btn-group">
+          <button type="button" class="btn btn-info"
+            ng-if="isArray(item.geo)"
+            ng-disabled="!visibleLayers[item.timestamp]"
+            ng-click="zoomTo(item)">
+            <i class="glyphicon glyphicon-search"></i>
+          </button>
+          <button type="button" class="btn btn-info"
+            ng-disabled="!isArray(item.geo)"
+            ng-click="toggleGeo(item)"
+            data-toggle="tooltip" data-placement="bottom" title="toggle geo">
+            <i ng-if="visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-open"></i>
+            <i ng-if="!visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-close"></i>
+            {{item.geo | arrLength}}
+          </button>
+        </div>
+
         <button type="button" class="btn btn-info"
-          ng-if="isArray(item.geo)"
-          ng-disabled="!visibleLayers[item.timestamp]"
-          ng-click="zoomTo(item)">
-          <i class="glyphicon glyphicon-search"></i>
-        </button>
-        <button type="button" class="btn btn-info"
-          ng-disabled="!isArray(item.geo)"
-          ng-click="toggleGeo(item)"
-          data-toggle="tooltip" data-placement="bottom" title="toggle geo">
-          <i ng-if="visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-open"></i>
-          <i ng-if="!visibleLayers[item.timestamp]" class="glyphicon glyphicon-eye-close"></i>
-          {{item.geo | arrLength}}
+          data-toggle="tooltip" data-placement="bottom" title="details"
+          ui-sref="bin.list({id:binId})">
+          <i class="glyphicon glyphicon-chevron-left"></i>
+          List
         </button>
       </div>
 
-      <button type="button" class="btn btn-info"
-        data-toggle="tooltip" data-placement="bottom" title="details"
-        ui-sref="bin.list({id:binId})">
-        <i class="glyphicon glyphicon-chevron-left"></i>
-        List
-      </button>
-    </div>
+    </li>
+  </ul>
 
-  </li>
-</ul>
-
-<div class="request-item">
-
-  <div class="panel"
-    ng-init="showHeaders = true">
-    <div class="panel-heading toggle-content"
-      ng-click="showHeaders = !showHeaders">
-      <i ng-if="!showHeaders" class="glyphicon glyphicon-chevron-right"></i>
-      <i ng-if="showHeaders" class="glyphicon glyphicon-chevron-down"></i>
-      Request Headers
-    </div>
-    <ul class="list-group"
-      ng-if="showHeaders">
-      <div ng-repeat="(k, v) in item.headers" class="list-group-item">
-        {{k}}: {{v}}
+  <div class="request-item">
+    <div class="panel"
+      ng-init="showHeaders = true">
+      <div class="panel-heading toggle-content"
+        ng-click="showHeaders = !showHeaders">
+        <i ng-if="!showHeaders" class="glyphicon glyphicon-chevron-right"></i>
+        <i ng-if="showHeaders" class="glyphicon glyphicon-chevron-down"></i>
+        Request Headers
       </div>
-    </ul>
-  </div>
-
-  <div class="panel"
-    ng-init="showReqBody = false">
-    <div class="panel-heading toggle-content"
-      ng-click="showReqBody = !showReqBody">
-      <i ng-if="!showReqBody" class="glyphicon glyphicon-chevron-right"></i>
-      <i ng-if="showReqBody" class="glyphicon glyphicon-chevron-down"></i>
-      Request Body
-      <span ng-if="item.headers['Content-Length']" class="badge badge-default pull-right">{{item.headers['Content-Length'] | toKilobytes}} kb</span>
+      <ul class="list-group"
+        ng-if="showHeaders">
+        <div ng-repeat="(k, v) in item.headers" class="list-group-item">
+          {{k}}: {{v}}
+        </div>
+      </ul>
     </div>
-    <ul class="list-group"
-      ng-if="showReqBody">
-      <li class="list-group-item">
-        <pre>{{item.body | prettyJson}}</pre>
-      </li>
-    </ul>
-  </div>
 
-  <div ng-if="item.geo" class="panel"
-    ng-init="showReqGeo = false">
-    <div class="panel-heading toggle-content"
-      ng-click="showReqGeo = !showReqGeo">
-      <i ng-if="!showReqGeo" class="glyphicon glyphicon-chevron-right"></i>
-      <i ng-if="showReqGeo" class="glyphicon glyphicon-chevron-down"></i>
-      Found Geographic Data
-      <span class="badge badge-default pull-right">{{item.geo | arrLength}}</span>
+    <div class="panel"
+      ng-init="showReqBody = false">
+      <div class="panel-heading toggle-content"
+        ng-click="showReqBody = !showReqBody">
+        <i ng-if="!showReqBody" class="glyphicon glyphicon-chevron-right"></i>
+        <i ng-if="showReqBody" class="glyphicon glyphicon-chevron-down"></i>
+        Request Body
+        <span ng-if="item.headers['Content-Length']" class="badge badge-default pull-right">{{item.headers['Content-Length'] | toKilobytes}} kb</span>
+      </div>
+      <ul class="list-group"
+        ng-if="showReqBody">
+        <li class="list-group-item">
+          <pre>{{item.body | prettyJson}}</pre>
+        </li>
+      </ul>
     </div>
-    <ul class="list-group"
-      ng-if="showReqGeo">
-      <li class="list-group-item">
-        <pre>{{item.geo | prettyJson}}</pre>
-      </li>
-    </ul>
-  </div>
 
-</div>
+    <div ng-if="item.geo" class="panel"
+      ng-init="showReqGeo = false">
+      <div class="panel-heading toggle-content"
+        ng-click="showReqGeo = !showReqGeo">
+        <i ng-if="!showReqGeo" class="glyphicon glyphicon-chevron-right"></i>
+        <i ng-if="showReqGeo" class="glyphicon glyphicon-chevron-down"></i>
+        Found Geographic Data
+        <span class="badge badge-default pull-right">{{item.geo | arrLength}}</span>
+      </div>
+      <ul class="list-group"
+        ng-if="showReqGeo">
+        <li class="list-group-item">
+          <pre>{{item.geo | prettyJson}}</pre>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="request" ng-if="!item">
+  <div class="alert alert-info">
+    <h4><i class="fa fa-warning"></i> Request "{{requestId}}" Not Found!</h4>
+    <p>Either this request has expired, or it never existed! Either way there's nothing to see here. You can either view Geobin <strong>{{binId}}</strong> or go home.</p>
+    <hr>
+    <p>
+      <a class="btn btn-primary"
+        ui-sref="bin.list({binId: binId})"><i class="fa fa-globe"></i> View Geobin <strong>{{binId}}</strong></a>
+      <a href="/" class="btn btn-link"><i class="fa fa-home"></i> Go Back Home</a>
+    </p>
+  </div>
+</section>

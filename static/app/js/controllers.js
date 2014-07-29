@@ -68,19 +68,23 @@
 
     api.history(binId, function (data) {
       $scope.validBin = (data !== undefined);
-      if ($scope.validBin) {
-        $scope.startTime = Math.floor(new Date().getTime() / 1000);
-        $scope.history = data.reverse();
-        if ($scope.history.length === 0) {
-          $scope.isFirst = true;
-        }
-        for (var i = 0; i < data.length; i++) {
-          if (data[i].geo) {
-            $scope.toggleGeo(data[i]);
-          }
-        }
-        $scope.zoomToAll();
+
+      if (!$scope.validBin) {
+        $scope.history = false;
+        return;
       }
+
+      $scope.startTime = Math.floor(new Date().getTime() / 1000);
+      $scope.history = data.reverse();
+      if ($scope.history.length === 0) {
+        $scope.isFirst = true;
+      }
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].geo) {
+          $scope.toggleGeo(data[i]);
+        }
+      }
+      $scope.zoomToAll();
     });
 
     api.ws.open(binId, function(event) {
@@ -107,10 +111,16 @@
 
   .controller('BinListCtrl', ['$scope', function ($scope) {}])
 
-  .controller('BinRequestCtrl', ['$scope', '$stateParams',
-    function ($scope, $stateParams) {
+  .controller('BinRequestCtrl', ['$scope', '$stateParams', '$location',
+    function ($scope, $stateParams, $location) {
       $scope.item = updateItem();
+      $scope.requestId = $stateParams.timestamp;
       $scope.$watch('history', function(){
+        // @TODO: Clean up. This should ideally be resolved at the router level.
+        if ($scope.history === false) {
+          $location.path('/' + $stateParams.binId);
+          return;
+        }
         if ($scope.isEmpty($scope.item)) {
           $scope.item = updateItem();
         }
