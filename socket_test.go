@@ -73,7 +73,7 @@ func TestManyMessagesSingleSocket(t *testing.T) {
 	go writeLotsaMessages(client, count, interval)
 
 	// a sleep duration ~50% longer than the time needed to write all the messages
-	micros := time.Duration(float64(count)*1.5) * interval
+	micros := time.Duration(float64(count)*3.0) * interval
 	// sleep a bit to let the messages be sent
 	time.Sleep(micros)
 	assert.Equal(t, uint64(count), atomic.LoadUint64(&clientMsgReceivedCount))
