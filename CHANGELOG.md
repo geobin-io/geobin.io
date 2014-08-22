@@ -5,6 +5,7 @@
 * zoom in on first new request
 * zoom to extent of all requests when loading a bin
 * catch invalid request URLs
+* fix double-reporting pageview analytics bug (bump angulartics to 0.16.4)
 
 # 1.0.2
 * refactor services
