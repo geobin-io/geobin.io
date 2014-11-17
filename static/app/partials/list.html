@@ -8,12 +8,11 @@
         <div class="btn"
           data-toggle="tooltip" data-placement="bottom" title="time request was received">
           <i class="glyphicon glyphicon-time"></i>
-          {{item.timestamp | makeDate | date:'hh:mm:ss a'}}
+          {{item.timestamp | prettyTime}}
         </div>
         <div class="btn"
           data-toggle="tooltip" data-placement="bottom" title="date request was received">
-          <i class="glyphicon glyphicon-calendar"></i>
-          {{item.timestamp | makeDate | date:'MM/dd/yyyy'}}
+          {{item.timestamp | prettyDate}}
         </div>
       </div>
 
