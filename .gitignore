@@ -12,3 +12,6 @@ debug.out
 coverage/
 config.json
 npm-debug.log
+build
+!build/build.go
+!build/README.md
