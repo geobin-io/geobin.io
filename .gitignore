@@ -12,3 +12,4 @@ debug.out
 coverage/
 config.json
 npm-debug.log
+build/

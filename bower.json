@@ -15,7 +15,7 @@
     "angular-ui-router": "~0.2.10",
     "angular-md": "~1.0.0",
     "marked": "~0.3.2",
-    "angulartics": "~0.15.19"
+    "angulartics": "~0.16.4"
   },
   "resolutions": {
     "marked": "~0.3.2",

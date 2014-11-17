@@ -6,8 +6,12 @@ import (
 	"os"
 )
 
-// Path to the config file
-var configFile = "./config.json"
+const (
+	// Path to the config file
+	configFile = "./config.json"
+	// Requests per second
+	rateLimit = 1
+)
 
 // Config holds configuration values read in from the config file
 type Config struct {
@@ -18,17 +22,23 @@ type Config struct {
 	RedisDB    int64
 	NameVals   string
 	NameLength int
+	RateLimit  int
 }
 
 // loadConfig reads configuration values from the config file
-func loadConfig() {
+func loadConfig() *Config {
 	file, err := os.Open(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
+
+	var conf Config
+	err = decoder.Decode(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	conf.RateLimit = rateLimit
+	return &conf
 }

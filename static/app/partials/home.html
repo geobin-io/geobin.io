@@ -7,17 +7,24 @@
 
 <div class="container">
   <div class="row">
+
     <div class="col-md-7">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h2 class="panel-title">What is Geobin?</h2>
         </div>
         <div class="panel-body">
-          <p class="lead">It's like <a href="http://requestb.in/">RequestBin</a>, but for geographic data.</p>
           <p>Geobin allows you to create a temporary URL to collect and inspect JSON requests that contain geographic data. Inspect the headers and body of a request and view any geographic data parsed out of the body on a map.</p>
           <p>You can also receive data in real time. As long as your browser supports <a href="http://caniuse.com/websockets">WebSockets</a>, once you're looking at a geobin, new data will be streamed directly to the browser and any found geographic data will be mapped instantly.</p>
+          Hat tip to <a href="http://requestb.in">RequestBin</a> for inspiration.
+        </div>
+      </div>
 
-          <p class="lead">How do we find geographic data?</p>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">How do we find geographic data?</h2>
+        </div>
+        <div class="panel-body">
           <p>We look for <a href="http://geojsonlint.com/">valid</a> <a href="http://geojson.org/geojson-spec.html">GeoJSON</a>. If no GeoJSON is detected, we'll also look for the following properties:</p>
 
           <h4>Latitude &amp; Longitude</h4>
@@ -81,5 +88,6 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>

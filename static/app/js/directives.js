@@ -57,6 +57,8 @@
         var features = {};
         var layers = {};
 
+        $scope.visibleLayers = {};
+
         L.control.layers(basemaps.all).addTo(map);
 
         /**
@@ -79,9 +81,11 @@
           }
 
           if (map.hasLayer(features[id])) {
+            $scope.visibleLayers[id] = false;
             return map.removeLayer(features[id]);
           }
 
+          $scope.visibleLayers[id] = true;
           map.addLayer(features[id]);
         };
 
