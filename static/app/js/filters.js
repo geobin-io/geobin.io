@@ -33,13 +33,23 @@
     };
   }])
 
+  // makeDate
+  // --------
+  // turns a unix timestamp into a javascript Date object
+
+  .filter('makeDate', [function () {
+      return function (ts) {
+          return new Date(ts * 1000);
+      };
+  }])
+
   // prettyDate
   // ----------
   // turns a unix timestamp into a localized date and time string
 
-  .filter('prettyTime', [function () {
+  .filter('prettyTime', ['$filter', function ($filter) {
     return function (ts) {
-      return new Date(ts * 1000).toLocaleTimeString();
+      return $filter('date')(new Date(ts * 1000), 'hh:mm:ss a');
     };
   }])
 
@@ -47,19 +57,9 @@
   // ----------
   // turns a unix timestamp into a localized date and time string
 
-  .filter('prettyDate', [function () {
+  .filter('prettyDate', ['$filter', function ($filter) {
     return function (ts) {
-      return new Date(ts * 1000).toLocaleDateString();
-    };
-  }])
-
-  // prettyDateTime
-  // --------------
-  // turns a unix timestamp into a localized date and time string
-
-  .filter('prettyDateTime', [function () {
-    return function (ts) {
-      return new Date(ts * 1000).toLocaleString();
+      return $filter('date')(new Date(ts * 1000), 'MM/dd/yyyy');
     };
   }])
 
