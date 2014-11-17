@@ -33,6 +33,16 @@
     };
   }])
 
+  // makeDate
+  // --------
+  // turns a unix timestamp into a javascript Date object
+
+  .filter('makeDate', [function () {
+      return function (ts) {
+          return new Date(ts * 1000);
+      };
+  }])
+
   // prettyDate
   // ----------
   // turns a unix timestamp into a localized date and time string
