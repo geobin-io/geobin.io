@@ -123,9 +123,10 @@ func (gb *geobinServer) binHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
-		// TODO: Create bin.
-		http.NotFound(w, r)
-		return
+		// create it
+		if _, err = gb.createBin(name, w); err != nil {
+			return
+		}
 	}
 
 	var body []byte
