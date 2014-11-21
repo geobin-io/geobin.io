@@ -217,7 +217,7 @@ func TestBinHandler200(t *testing.T) {
 	assertResponseOK(w, t)
 }
 
-func TestBinHistoryReturnsErrorForInvalidBin(t *testing.T) {
+func TestBinHistoryCreatesNonExistantBin(t *testing.T) {
 	binId := "neverland"
 
 	// Check history for our bin
@@ -229,7 +229,7 @@ func TestBinHistoryReturnsErrorForInvalidBin(t *testing.T) {
 	w := httptest.NewRecorder()
 	createGeobinServer().ServeHTTP(w, req)
 
-	assertResponseCode(w, http.StatusNotFound, t)
+	assertResponseOK(w, t)
 }
 
 func TestBinHistoryWorksAsIntended(t *testing.T) {
