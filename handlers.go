@@ -13,6 +13,28 @@ import (
 	"github.com/nu7hatch/gouuid"
 )
 
+func (gb *geobinServer) createBin(n string, w http.ResponseWriter) (time.Time, error) {
+	var err error
+	t := time.Now()
+
+	// Save to redis
+	if _, err = gb.ZAdd(n, redis.Z{Score: 0, Member: ""}); err != nil {
+		log.Println("Failure to ZADD to", n, err)
+		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
+		return t, err
+	}
+
+	// Set expiration
+	d := 48 * time.Hour
+	if _, err = gb.Expire(n, d); err != nil {
+		log.Println("Failure to set EXPIRE for", n, err)
+		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
+		return t, err
+	}
+
+	return t.Add(d), nil
+}
+
 // createHandler handles requests to /api/1/create. It creates a randomly generated bin_id,
 // creates an entry in redis for it, with a 48 hour expiration time and writes a json object
 // to the response with the following structure:
@@ -34,27 +56,16 @@ func (gb *geobinServer) createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save to redis
-	if _, err = gb.ZAdd(n, redis.Z{Score: 0, Member: ""}); err != nil {
-		log.Println("Failure to ZADD to", n, err)
-		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
+	var t time.Time
+	if t, err = gb.createBin(n, w); err != nil {
 		return
 	}
-
-	// Set expiration
-	d := 48 * time.Hour
-	if _, err = gb.Expire(n, d); err != nil {
-		log.Println("Failure to set EXPIRE for", n, err)
-		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
-		return
-	}
-	exp := time.Now().Add(d).Unix()
 
 	// Create the json response and encoder
 	encoder := json.NewEncoder(w)
 	bin := map[string]interface{}{
 		"id":      n,
-		"expires": exp,
+		"expires": t.Unix(),
 	}
 
 	// encode the json directly to the response writer
@@ -112,6 +123,7 @@ func (gb *geobinServer) binHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
+		// TODO: Create bin.
 		http.NotFound(w, r)
 		return
 	}
@@ -164,6 +176,7 @@ func (gb *geobinServer) historyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
+		// TODO: Create new bin with given binId
 		http.NotFound(w, r)
 		return
 	}
@@ -202,6 +215,8 @@ func (gb *geobinServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	debugLog("create -", r.URL)
 	path := strings.Split(r.URL.Path, "/")
 	binName := path[len(path)-1]
+
+	// TODO: Check if binId exists, create it if it doesn't.
 
 	// start pub subbing
 	if err := gb.Subscribe(binName); err != nil {
