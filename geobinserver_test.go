@@ -148,16 +148,15 @@ func TestCreateHandler(t *testing.T) {
 	assertBodyContainsKey(w.Body, "expires", t)
 }
 
-func TestBinHandler404(t *testing.T) {
-	// Test 404 for nonexistant bin
-	req, err := http.NewRequest("POST", "http://testing.geobin.io/nonexistant_bin", nil)
+func TestCustomBinHandler(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://testing.geobin.io/my_awesome_bin_id", nil)
 	if err != nil {
 		t.Error(err)
 	}
 	w := httptest.NewRecorder()
 	createGeobinServer().ServeHTTP(w, req)
 
-	assertResponseNotFound(w, t)
+	assertResponseOK(w, t)
 }
 
 func TestBinHandlerEmptyBody(t *testing.T) {
