@@ -177,9 +177,10 @@ func (gb *geobinServer) historyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
-		// TODO: Create new bin with given binId
-		http.NotFound(w, r)
-		return
+		// create it
+		if _, err = gb.createBin(name, w); err != nil {
+			return
+		}
 	}
 
 	set, err := gb.ZRevRange(name, "0", "-1")
@@ -217,7 +218,19 @@ func (gb *geobinServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	path := strings.Split(r.URL.Path, "/")
 	binName := path[len(path)-1]
 
-	// TODO: Check if binId exists, create it if it doesn't.
+	exists, err := gb.Exists(binName)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !exists {
+		if _, err := gb.createBin(binName, w); err != nil {
+			log.Println("Failure to create bin while trying to SUBSCRIBE to", binName, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	// start pub subbing
 	if err := gb.Subscribe(binName); err != nil {
