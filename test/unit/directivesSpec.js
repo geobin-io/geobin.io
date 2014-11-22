@@ -29,30 +29,6 @@ describe('directives', function() {
   beforeEach(module('Geobin.services'));
   beforeEach(module('Geobin.directives'));
 
-  describe('client-version', function() {
-    it('should print current version', function() {
-      module(function($provide) {
-        $provide.value('clientVersion', 'TEST_VER');
-      });
-      inject(function($compile, $rootScope) {
-        var element = $compile('<span client-version></span>')($rootScope);
-        expect(element.text()).toEqual('TEST_VER');
-      });
-    });
-  });
-
-  describe('api-version', function() {
-    it('should print current version', function() {
-      module(function($provide) {
-        $provide.value('apiVersion', 'TEST_VER');
-      });
-      inject(function($compile, $rootScope) {
-        var element = $compile('<span api-version></span>')($rootScope);
-        expect(element.text()).toEqual('TEST_VER');
-      });
-    });
-  });
-
   describe('bin-map', function() {
     var scope, element;
     var template = '<bin-map id="testMap" center="45.521699,-122.677386" zoom="10"></bin-map>';
