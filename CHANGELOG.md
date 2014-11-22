@@ -1,5 +1,14 @@
 # Geobin Changelog
 
+# 1.1.0
+* restructure angular app
+* move bower components from `/static/app/components/` to `/static/components/`
+* @TODO:
+  * move bower components to root
+  * get rid of jquery & jquery bootstrap
+  * concatenate js (browserify)
+  * use ng-annotate for angular minification
+
 # 1.0.3
 * fix visibility toggle bug
 * zoom in on first new request

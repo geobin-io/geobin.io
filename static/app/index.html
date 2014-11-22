@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <title>Geobin</title>
   <base href="/">
-  <link rel="stylesheet" href="/static/app/components/bootstrap/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="/static/app/components/Bootflat/bootflat/css/bootflat.min.css">
-  <link rel="stylesheet" href="/static/app/components/fontawesome/css/font-awesome.min.css">
-  <link rel="stylesheet" href="/static/app/components/angular-loading-bar/build/loading-bar.min.css">
-  <link rel="stylesheet" href="/static/app/components/leaflet-dist/leaflet.css">
-  <link rel="stylesheet" href="/static/app/css/app.css">
+  <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/components/Bootflat/bootflat/css/bootflat.min.css">
+  <link rel="stylesheet" href="/static/components/fontawesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/static/components/angular-loading-bar/build/loading-bar.min.css">
+  <link rel="stylesheet" href="/static/components/leaflet-dist/leaflet.css">
+  <link rel="stylesheet" href="/static/app/style.css">
 </head>
 <body ng-app="Geobin">
 
@@ -64,7 +64,7 @@
 
 <footer class="footer">
   <div class="container-fluid">
-    <p class="text-muted pull-left" ng-cloak>Geobin &#149; Client v<span client-version></span> &#149; API v<span api-version></span></p>
+    <p class="text-muted pull-left" ng-cloak>Geobin &#149; <code class="inverse">Client v{{clientVersion}}</code> &#149; <a href="/doc/api"><code class="inverse">API v{{apiVersion}}</code></a></p>
     <p class="text-muted pull-right">
       <a href="http://pdx.esri.com">Made by EsriPDX</a> &#149;
       <a href="http://github.com/geobin-io/geobin.io"><i class="fa fa-code-fork"></i> Fork it on Github</a>
@@ -79,23 +79,27 @@
   })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
   ga('create', 'UA-44963317-4', 'geobin.io');
 </script>
-<script src="/static/app/components/jquery/dist/jquery.min.js"></script>
-<script src="/static/app/components/tinystore/tinystore.min.js"></script>
-<script src="/static/app/components/leaflet-dist/leaflet.js"></script>
-<script src="/static/app/components/esri-leaflet/dist/esri-leaflet.js"></script>
-<script src="/static/app/components/marked/lib/marked.js"></script>
-<script src="/static/app/components/angular/angular.min.js"></script>
-<script src="/static/app/components/angular-ui-router/release/angular-ui-router.min.js"></script>
-<script src="/static/app/components/angular-loading-bar/build/loading-bar.min.js"></script>
-<script src="/static/app/components/angular-md/dist/angular-md.min.js"></script>
-<script src="/static/app/components/angulartics/dist/angulartics.min.js"></script>
-<script src="/static/app/components/angulartics/dist/angulartics-ga.min.js"></script>
-<script src="/static/app/components/bootstrap/dist/js/bootstrap.min.js"></script>
-<script src="/static/app/js/app.js"></script>
-<script src="/static/app/js/services.js"></script>
-<script src="/static/app/js/controllers.js"></script>
-<script src="/static/app/js/filters.js"></script>
-<script src="/static/app/js/directives.js"></script>
+<script src="/static/components/jquery/dist/jquery.min.js"></script>
+<script src="/static/components/tinystore/tinystore.min.js"></script>
+<script src="/static/components/leaflet-dist/leaflet.js"></script>
+<script src="/static/components/esri-leaflet/dist/esri-leaflet.js"></script>
+<script src="/static/components/marked/lib/marked.js"></script>
+<script src="/static/components/angular/angular.min.js"></script>
+<script src="/static/components/angular-ui-router/release/angular-ui-router.min.js"></script>
+<script src="/static/components/angular-loading-bar/build/loading-bar.min.js"></script>
+<script src="/static/components/angular-md/dist/angular-md.min.js"></script>
+<script src="/static/components/angulartics/dist/angulartics.min.js"></script>
+<script src="/static/components/angulartics/dist/angulartics-ga.min.js"></script>
+<script src="/static/components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="/static/app/index.js"></script>
+<script src="/static/app/services.js"></script>
+<script src="/static/app/filters.js"></script>
+<script src="/static/app/directives.js"></script>
+<script src="/static/app/nav/navCtrl.js"></script>
+<script src="/static/app/home/homeCtrl.js"></script>
+<script src="/static/app/bin/binCtrl.js"></script>
+<script src="/static/app/bin/binMapDirective.js"></script>
+<script src="/static/app/bin/binRequestCtrl.js"></script>
 
 </body>
 </html>

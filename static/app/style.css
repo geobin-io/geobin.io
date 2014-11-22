@@ -256,3 +256,8 @@ body {
   max-height: 260px;
   overflow-y: scroll;
 }
+
+code.inverse {
+  background: #2c2c2c;
+  color: #999;
+}
