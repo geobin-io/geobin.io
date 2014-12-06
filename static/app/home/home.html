@@ -1,7 +1,7 @@
 <div class="topic">
   <div class="container">
     <h1>Geobin</h1>
-    <p>Inspect HTTP Requests with Geographic Data</p>
+    <p>Visualize HTTP Requests with Geographic Data</p>
   </div>
 </div>
 
@@ -17,6 +17,30 @@
           <p>Geobin allows you to create a temporary URL to collect and inspect JSON requests that contain geographic data. Inspect the headers and body of a request and view any geographic data parsed out of the body on a map.</p>
           <p>You can also receive data in real time. As long as your browser supports <a href="http://caniuse.com/websockets">WebSockets</a>, once you're looking at a geobin, new data will be streamed directly to the browser and any found geographic data will be mapped instantly.</p>
           Hat tip to <a href="http://requestb.in">RequestBin</a> for inspiration.
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">How do I use it?</h2>
+        </div>
+        <div class="panel-body">
+        
+            <p>You can create a new temporary bin by clicking the "<a href="" analytics-on="click" analytics-event="Create Geobin" ng-click="create()">Create a New Geobin</a>" button above to get
+                a new randomly generated Bin ID, or you can use an arbitrary custom Bin ID of your choosing.</p>
+
+            <p>To verify that your custom ID valid and is not currently being used by someone else go put the ID in after the slash:
+                <a href="http://{{host}}/my_custom_bin_id">http://{{host}}/my_custom_bin_id</a>.</p>
+
+            <p>After you have a URL, post some data to it! We currently only accept JSON formatted data in the body of HTTP POST requests.</p>
+
+            <p>Anything you post to geobin will expire after 48 hours. The history list to the right shows the Geobins you've viewed recently and the amount
+                of time until their last piece of data will expire.</p>
+
+            <p>It is also worth noting that Geobin is built to be a tool for quickly visualizing data in a temporary fashion. Its primary
+                purpose is to be a debugging tool. As such, there is no access control for the bins. Anyone with the URL can POST to or view
+                the data in the bin. Given that, it is a good idea to avoid using a custom bin ID that has a high probability of a clash with
+                others. Please keep this in mind when posting data to a bin, <strong>it is not secured or protected in any fashion</strong>.</p>
         </div>
       </div>
 
