@@ -2,6 +2,7 @@ angular.module('Geobin.controllers')
 .controller('HomeCtrl', ['$scope', 'api', 'store',
   function ($scope, api, store) {
     document.title = 'Geobin';
+    $scope.host = window.location.host;
     $scope.create = api.create;
     $scope.bins = store.local.session.history;
     $scope.enabled = store.local.enabled;
