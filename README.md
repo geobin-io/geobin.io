@@ -1,6 +1,6 @@
 # Geobin
 
-[![Build Status](https://travis-ci.org/esripdx/geobin.io.svg?branch=master)](https://travis-ci.org/esripdx/geobin.io)
+[![Build Status](https://img.shields.io/travis/geobin-io/geobin.io.svg?style=flat-square)](https://travis-ci.org/geobin-io/geobin.io)
 
 _Inspect HTTP Requests with Geographic Data._
 
