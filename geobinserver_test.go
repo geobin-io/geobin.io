@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/bmizerany/assert"
-	"github.com/go-redis/redis"
+	redis "gopkg.in/redis.v1"
 )
 
 var testConf = &Config{

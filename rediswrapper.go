@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/go-redis/redis"
+	redis "gopkg.in/redis.v1"
 )
 
 // mock our use of redis pubsub for modularity/testing purposes

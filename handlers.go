@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/nu7hatch/gouuid"
+	redis "gopkg.in/redis.v1"
 )
 
 func (gb *geobinServer) createBin(n string, w http.ResponseWriter) (time.Time, error) {
