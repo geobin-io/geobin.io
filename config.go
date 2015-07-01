@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"time"
 )
 
 const (
 	// Path to the config file
 	configFile = "./config.json"
-	// Requests per second
-	rateLimit = 1
 )
 
 // Config holds configuration values read in from the config file
@@ -23,6 +22,7 @@ type Config struct {
 	NameVals   string
 	NameLength int
 	RateLimit  int
+	BinExpires time.Duration
 }
 
 // loadConfig reads configuration values from the config file
@@ -39,6 +39,7 @@ func loadConfig() *Config {
 		log.Fatal(err)
 	}
 
-	conf.RateLimit = rateLimit
+	conf.BinExpires = conf.BinExpires * time.Hour
+
 	return &conf
 }
