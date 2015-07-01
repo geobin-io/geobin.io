@@ -27,6 +27,7 @@ var testConf = &Config{
 	"023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
 	10,
 	999,
+	48 * time.Hour,
 }
 
 type MockRedis struct {
