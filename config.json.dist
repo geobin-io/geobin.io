@@ -5,5 +5,7 @@
   "RedisPass": "",
   "RedisDB": 0,
   "NameVals": "023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
-  "NameLength": 10
+  "NameLength": 10,
+  "RateLimit": 1,
+  "BinExpires": 48
 }

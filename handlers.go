@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/nu7hatch/gouuid"
+	redis "gopkg.in/redis.v1"
 )
 
 func (gb *geobinServer) createBin(n string, w http.ResponseWriter) (time.Time, error) {
@@ -25,14 +25,22 @@ func (gb *geobinServer) createBin(n string, w http.ResponseWriter) (time.Time, e
 	}
 
 	// Set expiration
-	d := 48 * time.Hour
-	if _, err = gb.Expire(n, d); err != nil {
-		log.Println("Failure to set EXPIRE for", n, err)
+	d := gb.conf.BinExpires
+	if err = gb.setBinExpires(n, d); err != nil {
 		http.Error(w, "Could not generate new Geobin!", http.StatusInternalServerError)
 		return t, err
 	}
 
 	return t.Add(d), nil
+}
+
+// setBinExpires sets the redis EXPIRE key for the given bin id.
+func (gb *geobinServer) setBinExpires(n string, d time.Duration) error {
+	if _, err := gb.Expire(n, d); err != nil {
+		log.Println("Failure to set EXPIRE for", n, err)
+		return err
+	}
+	return nil
 }
 
 // createHandler handles requests to /api/1/create. It creates a randomly generated bin_id,
@@ -156,6 +164,9 @@ func (gb *geobinServer) binHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err = gb.ZAdd(name, redis.Z{Score: float64(time.Now().UTC().Unix()), Member: string(encoded)}); err != nil {
 		log.Println("Failure to ZADD to", name, err)
 	}
+
+	// reset the bin expiry time to 48 hours from now
+	gb.setBinExpires(name, gb.conf.BinExpires)
 
 	if _, err = gb.Publish(name, string(encoded)); err != nil {
 		log.Println("Failure to PUBLISH to", name, err)

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/bmizerany/assert"
-	"github.com/go-redis/redis"
+	redis "gopkg.in/redis.v1"
 )
 
 var testConf = &Config{
@@ -27,6 +27,7 @@ var testConf = &Config{
 	"023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
 	10,
 	999,
+	48 * time.Hour,
 }
 
 type MockRedis struct {
