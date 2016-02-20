@@ -36,13 +36,13 @@ Here is the short version of how to get Geobin up and running locally, assuming 
 ### 1. `go get` Geobin
 
 ```bash
-> go get github.com/esripdx/geobin.io
+> go get github.com/geobin-io/geobin.io
 ```
 
 ### 2. Run the setup scripts
 
 ```bash
-> cd $GOPATH/src/github.com/esripdx/geobin.io
+> cd $GOPATH/src/github.com/geobin-io/geobin.io
 > make setup # (runs `go get -t` and `npm install`)
 ```
 
@@ -122,9 +122,11 @@ We look for [valid](http://geojsonlint.com) [GeoJSON]. If no GeoJSON is detected
 
 ```javascript
 {
-  "coords": [0,0] // (x (longitude), y (latitude))
+  "coords": [0,0]
 }
 ```
+
+The order of elements is `[x (longitude), y (latitude)]`, as specified by the [GeoJSON spec](http://geojson.org/geojson-spec.html#positions).
 
 * accepted keys:
   * `geo`
