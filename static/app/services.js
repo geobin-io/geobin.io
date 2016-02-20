@@ -11,17 +11,9 @@ angular.module('Geobin.services')
       L.esri.basemapLayer('Gray'),
       L.esri.basemapLayer('GrayLabels')
     ]);
-    var darkgray = L.layerGroup([
-      L.esri.basemapLayer('DarkGray'),
-      L.esri.basemapLayer('DarkGrayLabels')
-    ]);
     var imagery = L.layerGroup([
       L.esri.basemapLayer('Imagery'),
       L.esri.basemapLayer('ImageryLabels')
-    ]);
-    var shadedrelief = L.layerGroup([
-      L.esri.basemapLayer('ShadedRelief'),
-      L.esri.basemapLayer('ShadedReliefLabels')
     ]);
 
     this.all = {
@@ -30,9 +22,7 @@ angular.module('Geobin.services')
       'Oceans': oceans,
       'Nat Geo': natgeo,
       'Gray': gray,
-      'Dark Gray': darkgray,
-      'Imagery': imagery,
-      'Shaded Relief': shadedrelief
+      'Imagery': imagery
     };
 
     this.def = 'Streets';
