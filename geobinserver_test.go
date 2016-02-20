@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/bmizerany/assert"
-	"github.com/go-redis/redis"
+	redis "gopkg.in/redis.v1"
 )
 
 var testConf = &Config{
@@ -27,6 +27,7 @@ var testConf = &Config{
 	"023456789abcdefghjkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ",
 	10,
 	999,
+	48 * time.Hour,
 }
 
 type MockRedis struct {
@@ -148,16 +149,15 @@ func TestCreateHandler(t *testing.T) {
 	assertBodyContainsKey(w.Body, "expires", t)
 }
 
-func TestBinHandler404(t *testing.T) {
-	// Test 404 for nonexistant bin
-	req, err := http.NewRequest("POST", "http://testing.geobin.io/nonexistant_bin", nil)
+func TestCustomBinHandler(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://testing.geobin.io/my_awesome_bin_id", nil)
 	if err != nil {
 		t.Error(err)
 	}
 	w := httptest.NewRecorder()
 	createGeobinServer().ServeHTTP(w, req)
 
-	assertResponseNotFound(w, t)
+	assertResponseOK(w, t)
 }
 
 func TestBinHandlerEmptyBody(t *testing.T) {
@@ -218,7 +218,7 @@ func TestBinHandler200(t *testing.T) {
 	assertResponseOK(w, t)
 }
 
-func TestBinHistoryReturnsErrorForInvalidBin(t *testing.T) {
+func TestBinHistoryCreatesNonExistantBin(t *testing.T) {
 	binId := "neverland"
 
 	// Check history for our bin
@@ -230,7 +230,7 @@ func TestBinHistoryReturnsErrorForInvalidBin(t *testing.T) {
 	w := httptest.NewRecorder()
 	createGeobinServer().ServeHTTP(w, req)
 
-	assertResponseCode(w, http.StatusNotFound, t)
+	assertResponseOK(w, t)
 }
 
 func TestBinHistoryWorksAsIntended(t *testing.T) {

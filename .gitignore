@@ -5,10 +5,13 @@ connection
 dump.rdb
 .DS_Store
 node_modules/
-static/app/components/
+static/components/
 geobin-go.test
 geobin.io.test
 debug.out
 coverage/
 config.json
 npm-debug.log
+build
+!build/build.go
+!build/README.md

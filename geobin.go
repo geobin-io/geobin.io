@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/go-redis/redis"
+	redis "gopkg.in/redis.v1"
 )
 
 // some read-only global vars

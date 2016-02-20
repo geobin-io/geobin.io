@@ -1,24 +1,86 @@
-(function(){
+angular.module('Geobin.directives')
+.directive('binMap',
 
-  // Directives
-  angular.module('Geobin.directives', [])
+  ['store', 'basemaps',
 
-  // App Version
-  .directive('clientVersion', ['clientVersion', function (version) {
-    return function (scope, elm, attrs) {
-      elm.text(version);
-    };
-  }])
+  function (store, basemaps) {
 
-  // API Version
-  .directive('apiVersion', ['apiVersion', function (version) {
-    return function (scope, elm, attrs) {
-      elm.text(version);
-    };
-  }])
+    /**
+     * create leaflet layer from geobin request object
+     * @param  {Object} obj - geobin request object
+     * @param  {Object} body - request body
+     * @return {Object} leaflet layer
+     */
+    function createLayer (obj, body) {
+      var content, layer;
+      var shapeOptions = {
+        color: randomishColor(),
+        stroke: true,
+        weight: 2,
+        opacity: 0.8,
+        fill: true,
+        fillColor: null,
+        fillOpacity: 0.3,
+        clickable: true
+      };
 
-  // Bin Map
-  .directive('binMap', ['store', 'basemaps', function (store, basemaps) {
+      if (obj.radius) {
+        layer = L.circle(
+          obj.geo.coordinates.reverse(),
+          obj.radius,
+          shapeOptions
+        );
+
+        if (obj.path.length) {
+          content = valueFromPath(body, obj.path);
+        } else {
+          content = body;
+        }
+
+        layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
+      } else {
+        layer = L.geoJson(obj.geo, {
+          style: function () {
+            return shapeOptions;
+          },
+          onEachFeature: function (feature, layer) {
+            if (body.type === 'FeatureCollection') {
+              content = feature;
+            } else if (obj.path.length) {
+              content = valueFromPath(body, obj.path);
+            } else {
+              content = body;
+            }
+            layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
+          }
+        });
+      }
+
+      return layer;
+    }
+
+    function randomishColor () {
+      var a = '#'+Math.floor(Math.random()*16777215).toString(16);
+      var b = replace(a, 1);
+      var c = replace(b, 3);
+      var d = replace(c, 5);
+      return d;
+    }
+
+    function replace (str, index) {
+      var c = (Math.floor(Math.random()*10) + 4).toString(16);
+      return str.substr(0, index) + c + str.substr(index + 1);
+    }
+
+    function valueFromPath (obj, arr) {
+      var a = arr.slice(0);
+      var k = a.shift();
+      if (a.length) {
+        return valueFromPath(obj[k], a);
+      }
+      return obj[k];
+    }
+
     return {
       restrict: 'E',
       scope: false,
@@ -123,60 +185,6 @@
           map.fitBounds(features[id].getBounds());
         };
 
-        /**
-         * create leaflet layer from geobin request object
-         * @param  {Object} obj - geobin request object
-         * @param  {Object} body - request body
-         * @return {Object} leaflet layer
-         */
-        function createLayer (obj, body) {
-          var content, layer;
-          var shapeOptions = {
-            color: randomishColor(),
-            stroke: true,
-            weight: 2,
-            opacity: 0.8,
-            fill: true,
-            fillColor: null,
-            fillOpacity: 0.3,
-            clickable: true
-          };
-
-          if (obj.radius) {
-            layer = L.circle(
-              obj.geo.coordinates.reverse(),
-              obj.radius,
-              shapeOptions
-            );
-
-            if (obj.path.length) {
-              content = valueFromPath(body, obj.path);
-            } else {
-              content = body;
-            }
-
-            layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
-          } else {
-            layer = L.geoJson(obj.geo, {
-              style: function () {
-                return shapeOptions;
-              },
-              onEachFeature: function (feature, layer) {
-                if (body.type === 'FeatureCollection') {
-                  content = feature;
-                } else if (obj.path.length) {
-                  content = valueFromPath(body, obj.path);
-                } else {
-                  content = body;
-                }
-                layer.bindPopup('<pre>' + JSON.stringify(content, undefined, 2) + '</pre>');
-              }
-            });
-          }
-
-          return layer;
-        }
-
         map.on('baselayerchange', function(e) {
           store.local.set('basemap', e.name);
         });
@@ -186,30 +194,5 @@
         });
       }
     };
-  }]);
-
-  // extra
-
-  function randomishColor () {
-    var a = '#'+Math.floor(Math.random()*16777215).toString(16);
-    var b = replace(a, 1);
-    var c = replace(b, 3);
-    var d = replace(c, 5);
-    return d;
   }
-
-  function replace (str, index) {
-    var c = (Math.floor(Math.random()*10) + 4).toString(16);
-    return str.substr(0, index) + c + str.substr(index + 1);
-  }
-
-  function valueFromPath (obj, arr) {
-    var a = arr.slice(0);
-    var k = a.shift();
-    if (a.length) {
-      return valueFromPath(obj[k], a);
-    }
-    return obj[k];
-  }
-
-})();
+]);

@@ -46,8 +46,8 @@
 
 <div class="panel" ng-if="validBin && isEmpty(history)">
   <div class="panel-heading">
-    <h4>No History Yet</h4>
-    <p>Try sending a request!</p>
+    <h4>No History</h4>
+    <p>This bin is empty. Try sending a request!</p>
   </div>
 
   <ul class="list-group">
@@ -63,12 +63,12 @@
 
 <div class="alert alert-info" ng-if="!validBin">
   <h4><i class="fa fa-warning"></i> Geobin "{{binId}}" Not Found!</h4>
-  <p>Either this bin has expired, or it never existed! Either way there's nothing to see here. You can either go back home or create a new geobin.</p>
+  <p>This is an invalid bin name! You can either go back home or create a new geobin.</p>
   <hr>
   <p>
     <button type="button" class="btn btn-primary"
       analytics-on="click"
-      analytics-event="Create Geobin (expired)"
+      analytics-event="Create Geobin (invalid)"
       ng-click="create()"><i class="fa fa-magic"></i> Create a New Geobin</button>
     <a href="/" class="btn btn-link"><i class="fa fa-home"></i> Go Back Home</a>
   </p>
