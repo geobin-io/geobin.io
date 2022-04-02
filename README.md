@@ -1,6 +1,10 @@
-# Geobin
+##### ⚠️ DEPRECATION NOTICE ⚠️
 
-[![Build Status](https://img.shields.io/travis/geobin-io/geobin.io.svg?style=flat-square)](https://travis-ci.org/geobin-io/geobin.io)
+**This project is no longer maintained.**
+
+---
+
+# Geobin
 
 _Inspect HTTP Requests with Geographic Data._
 
